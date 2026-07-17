@@ -1,0 +1,12 @@
+# Never commit real secrets — only .env.example belongs in the repo.
+*.env
+.env*
+!secrets/.env.example
+
+# Local-only files
+*.local
+*.local.*
+tmp/
+__pycache__/
+*.pyc
+fallbackConfig.json

@@ -1,0 +1,23 @@
+# Example [mcp_servers.*] blocks for ~/.codex/config.toml.
+# KEY NAMES ONLY — real values live in ~/.config/agent-secrets/.env.
+# Load them into the environment before launching codex, e.g.:
+#   set -a; source ~/.config/agent-secrets/.env; set +a; codex
+# or inline literal values into your local config.toml (never commit that).
+
+# --- Figma (remote MCP) -------------------------------------------------
+# [mcp_servers.figma]
+# command = "npx"
+# args = ["-y", "figma-developer-mcp", "--stdio"]
+# env = { "FIGMA_API_KEY" = "<from agent-secrets: FIGMA_API_KEY>" }
+
+# --- GitLab -------------------------------------------------------------
+# [mcp_servers.gitlab]
+# command = "npx"
+# args = ["-y", "@zereight/mcp-gitlab"]
+# env = { "GITLAB_PERSONAL_ACCESS_TOKEN" = "<from agent-secrets>", "GITLAB_API_URL" = "https://gitlab.com/api/v4" }
+
+# --- Atlassian (Jira + Confluence via sooperset/mcp-atlassian) ------------
+# [mcp_servers.atlassian]
+# command = "uvx"
+# args = ["mcp-atlassian"]
+# env = { "JIRA_URL" = "<PEI_JIRA_BASE_URL>", "JIRA_USERNAME" = "<PEI_JIRA_USER_EMAIL>", "JIRA_API_TOKEN" = "<PEI_JIRA_API_TOKEN>", "CONFLUENCE_URL" = "<PEI_JIRA_BASE_URL>/wiki", "CONFLUENCE_USERNAME" = "<PEI_JIRA_USER_EMAIL>", "CONFLUENCE_API_TOKEN" = "<PEI_JIRA_API_TOKEN>" }

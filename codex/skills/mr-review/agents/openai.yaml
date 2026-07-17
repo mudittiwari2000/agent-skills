@@ -1,0 +1,4 @@
+interface:
+  display_name: "MR Review"
+  short_description: "Grounded whole-codebase GitLab MR reviews"
+  default_prompt: "Use $mr-review to review this GitLab merge request across the whole codebase and produce a severity-ranked report."

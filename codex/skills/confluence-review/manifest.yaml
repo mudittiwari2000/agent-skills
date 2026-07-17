@@ -1,0 +1,7 @@
+name: confluence-review
+description: Review Confluence documents; Atlassian Cloud REST via shared token.
+secrets:
+  required:
+    - any_of: [PEI_CONFLUENCE_USER_EMAIL, PEI_JIRA_USER_EMAIL]
+    - any_of: [PEI_CONFLUENCE_API_TOKEN, PEI_JIRA_API_TOKEN]
+  optional: [PEI_CONFLUENCE_BASE_URL, PEI_JIRA_BASE_URL]

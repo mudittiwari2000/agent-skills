@@ -1,0 +1,8 @@
+name: mr-review
+description: Grounded whole-codebase GitLab MR review with optional Jira/GitLab posting.
+secrets:
+  required:
+    - any_of: [GITLAB_TOKEN, GITLAB_PERSONAL_ACCESS_TOKEN]
+    - any_of: [PEI_JIRA_USER_EMAIL, JIRA_USER_EMAIL]
+    - any_of: [PEI_JIRA_API_TOKEN, JIRA_DIRECT_API_TOKEN, JIRA_API_TOKEN]
+  optional: [PEI_JIRA_BASE_URL, GITLAB_HOST]
