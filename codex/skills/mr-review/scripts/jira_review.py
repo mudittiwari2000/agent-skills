@@ -16,12 +16,13 @@ from review_common import ensure_current_head
 
 
 DEFAULT_USER_ENV_FILES = (
+    Path.home() / ".config" / "agent-secrets" / ".env",
     Path.home() / ".hermes" / "profiles" / "pegasus" / ".env",
     Path.home() / ".hermes" / ".env",
 )
 LEGACY_ENV_FILES = (
-    Path("/home/mudittiwari/dev/repos/local-environment-setup/.env"),
-    Path("/home/mudittiwari/dev/local-environment-setup/.env"),
+    Path.home() / "dev" / "repos" / "local-environment-setup" / ".env",
+    Path.home() / "dev" / "local-environment-setup" / ".env",
 )
 KEY_RE = re.compile(r"^[A-Z][A-Z0-9]+-\d+$")
 
@@ -68,7 +69,7 @@ def _nearest_env_files():
 
 
 def load_dotenv():
-    """Mirror Pegasus: profile env overrides shell; project env is fallback."""
+    """User-level env files override shell; a project .env only fills gaps."""
     configured = os.environ.get("JIRA_ENV_FILE")
     if configured:
         user_candidates = (Path(configured).expanduser(),)
@@ -104,10 +105,13 @@ def first_env(*names):
 class JiraClient:
     def __init__(self):
         self.env_file = load_dotenv()
-        self.base_url = (first_env(
+        base_url = first_env(
             "PEI_JIRA_BASE_URL", "JIRA_BASE_URL", "JIRA_URL", "ATLASSIAN_BASE_URL"
-        ) or
-                         "https://peimedia.atlassian.net").rstrip("/")
+        )
+        if not base_url:
+            die("no Jira base URL resolves; set PEI_JIRA_BASE_URL (or "
+                "JIRA_BASE_URL) in the secrets store")
+        self.base_url = base_url.rstrip("/")
         token = first_env(
             "PEI_JIRA_API_TOKEN", "JIRA_DIRECT_API_TOKEN", "JIRA_API_TOKEN",
             "JIRA_API_KEY", "ATLASSIAN_API_TOKEN"

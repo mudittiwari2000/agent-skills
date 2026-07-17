@@ -1,6 +1,6 @@
 ---
 name: mr-review
-description: Ground and review a PEI GitLab merge request across the whole codebase, not just the diff. Use when the user shares a gitlab.com merge-request URL or IID (e.g. "review this MR", "review !123", pastes a /-/merge_requests/ link), names a branch to review, or asks to review the current working-tree changes, for any repo under /home/mudittiwari/dev/repos. Fetches the MR into an isolated worktree, traces every changed symbol through its real callers/tests/config, checks correctness, regressions, security, error handling, tests, and repo conventions, verifies claims by running the repo's own checks when feasible, and emits a severity-ranked report. Local report by default; optionally posts it to GitLab or to the JIRA ticket identified from the source branch or MR title, but only when explicitly asked and only after verifying that the reviewed commit is still current.
+description: Ground and review a GitLab merge request across the whole codebase, not just the diff. Use when the user shares a gitlab.com merge-request URL or IID (e.g. "review this MR", "review !123", pastes a /-/merge_requests/ link), names a branch to review, or asks to review the current working-tree changes, for any repo under ~/dev/repos. Fetches the MR into an isolated worktree, traces every changed symbol through its real callers/tests/config, checks correctness, regressions, security, error handling, tests, and repo conventions, verifies claims by running the repo's own checks when feasible, and emits a severity-ranked report. Local report by default; optionally posts it to GitLab or to the JIRA ticket identified from the source branch or MR title, but only when explicitly asked and only after verifying that the reviewed commit is still current.
 ---
 
 # MR Review (grounded, whole-codebase)
@@ -9,9 +9,9 @@ Review a merge request against the **real repository state**, not the diff in
 isolation. The diff tells you *what* changed; the job is to judge whether it is
 correct *given the rest of the code that uses it*.
 
-Repos live under `/home/mudittiwari/dev/repos`. `glab` is authenticated to
-`gitlab.com/pei-media`. JIRA REST credentials are loaded by
-`scripts/jira_review.py` using Pegasus's profile-aware environment resolution;
+Repos live under `~/dev/repos` (override with `REPOS_ROOT`). `glab` must be
+authenticated to the GitLab host. JIRA REST credentials are loaded by
+`scripts/jira_review.py` through the agent-skills secrets resolution;
 credential values must never be printed. Do not disturb the user's working copy
 — all checkout happens in a throwaway worktree.
 
@@ -32,7 +32,7 @@ It prints `MODE`, `REPO_DIR`, `SOURCE_BRANCH`, `TARGET_BRANCH`, `BASE_SHA`,
 `HEAD_SHA`, `HEAD_LABEL`, `TITLE`, `WEB_URL`, `EXTERNAL_POSTING_ALLOWED`,
 `WORKTREE`, `DIFF_FILE`, `DESCRIPTION_FILE`, and the changed-file list. If it
 can't find the local clone for an MR URL, re-run with
-`REPO_DIR=/home/mudittiwari/dev/repos/<name>`.
+`REPO_DIR=~/dev/repos/<name>`.
 For a branch, it also resolves an associated open MR when `glab` can find one.
 The target branch comes from MR metadata, then `TARGET_BRANCH_OVERRIDE`, then
 the remote's actual default branch; do not substitute `main` by assumption.
@@ -118,15 +118,16 @@ If (and only if) the user asks to post the review to JIRA, first require
    python3 ~/.codex/skills/mr-review/scripts/jira_review.py issue <KEY>
    ```
 
-   The helper uses Jira Cloud REST API v3 and mirrors Pegasus credential
-   resolution. It loads `$JIRA_ENV_FILE` when explicitly set; otherwise it
-   loads `$HERMES_HOME/.env`, then `~/.hermes/profiles/pegasus/.env`, then
-   `~/.hermes/.env`. The user/profile file overrides stale shell values and a
-   nearest repo `.env` only fills missing values. Credential precedence is
-   `PEI_JIRA_USER_EMAIL` + `PEI_JIRA_API_TOKEN`, then legacy
-   `JIRA_USER_EMAIL` + `JIRA_DIRECT_API_TOKEN`/`JIRA_API_TOKEN`. Base URL
-   precedence is `PEI_JIRA_BASE_URL`, then `JIRA_BASE_URL`, then
-   `https://peimedia.atlassian.net`. Credential values are never printed.
+   The helper uses Jira Cloud REST API v3 and the agent-skills credential
+   resolution. It loads `$JIRA_ENV_FILE` when explicitly set; otherwise
+   `~/.config/agent-secrets/.env` (canonical), then `$HERMES_HOME/.env`,
+   `~/.hermes/profiles/pegasus/.env`, `~/.hermes/.env`. The user-level file
+   overrides stale shell values and a nearest repo `.env` only fills missing
+   values. Credential precedence is `PEI_JIRA_USER_EMAIL` +
+   `PEI_JIRA_API_TOKEN`, then legacy `JIRA_USER_EMAIL` +
+   `JIRA_DIRECT_API_TOKEN`/`JIRA_API_TOKEN`. Base URL precedence is
+   `PEI_JIRA_BASE_URL`, then `JIRA_BASE_URL` (required — no default).
+   Credential values are never printed.
 4. Confirm that the issue exists and show its key and summary to the user before
    posting, unless the user's current request already explicitly names that same
    key and asks to post.

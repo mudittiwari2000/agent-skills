@@ -5,7 +5,7 @@ Credentials resolve through agent-skills' shared chain (dedicated store first,
 Pegasus profile fallback) and are NEVER printed.
 
 Key precedence:
-  base url: PEI_CONFLUENCE_BASE_URL -> PEI_JIRA_BASE_URL -> https://peimedia.atlassian.net
+  base url: PEI_CONFLUENCE_BASE_URL -> PEI_JIRA_BASE_URL (required; no default)
   email:    PEI_CONFLUENCE_USER_EMAIL -> PEI_JIRA_USER_EMAIL
   token:    PEI_CONFLUENCE_API_TOKEN -> PEI_JIRA_API_TOKEN
 
@@ -56,8 +56,10 @@ class Confluence:
     def __init__(self):
         values, _ = env_resolve.resolve_all()
         base = (values.get("PEI_CONFLUENCE_BASE_URL")
-                or values.get("PEI_JIRA_BASE_URL")
-                or "https://peimedia.atlassian.net").rstrip("/")
+                or values.get("PEI_JIRA_BASE_URL") or "").rstrip("/")
+        if not base:
+            die("no Atlassian base URL resolves; set PEI_CONFLUENCE_BASE_URL "
+                "or PEI_JIRA_BASE_URL in the secrets store")
         if base.endswith("/wiki"):
             base = base[: -len("/wiki")]
         self.base = base

@@ -2,7 +2,7 @@
 # Resolve a GitLab MR, branch, or working tree into an isolated review worktree.
 set -euo pipefail
 
-REPOS_ROOT="${REPOS_ROOT:-/home/mudittiwari/dev/repos}"
+REPOS_ROOT="${REPOS_ROOT:-$HOME/dev/repos}"
 WT_ROOT="${WT_ROOT:-$HOME/.codex/mr-review/worktrees}"
 
 die() { echo "ERROR: $*" >&2; exit 1; }

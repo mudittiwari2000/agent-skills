@@ -288,9 +288,9 @@ def cmd_doctor():
     print("== API reachability (status codes only) ==")
     email = values.get("PEI_CONFLUENCE_USER_EMAIL") or values.get("PEI_JIRA_USER_EMAIL")
     token = values.get("PEI_CONFLUENCE_API_TOKEN") or values.get("PEI_JIRA_API_TOKEN")
-    base = (values.get("PEI_CONFLUENCE_BASE_URL") or values.get("PEI_JIRA_BASE_URL")
-            or "https://peimedia.atlassian.net").rstrip("/")
-    if email and token:
+    base = (values.get("PEI_CONFLUENCE_BASE_URL")
+            or values.get("PEI_JIRA_BASE_URL") or "").rstrip("/")
+    if email and token and base:
         status = _ping(f"{base}/wiki/api/v2/spaces?limit=1", email, token)
         print(f"  confluence {base}/wiki -> {status}")
         if status != 200:
@@ -300,7 +300,7 @@ def cmd_doctor():
         if status != 200:
             failures += 1
     else:
-        print("  skipped: no Atlassian credentials resolve")
+        print("  skipped: Atlassian email/token/base-url do not all resolve")
         failures += 1
 
     print(f"== result: {'OK' if not failures else f'{failures} problem(s)'} ==")

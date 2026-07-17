@@ -1,6 +1,6 @@
 ---
 name: confluence-review
-description: Review a PEI Confluence document (PRD, design doc, runbook, ADR, spec) for completeness, correctness, ambiguity, staleness, and structure, and emit a severity-ranked report. Use when the user shares a peimedia.atlassian.net/wiki URL or Confluence page ID, names a page to review ("review the X design doc"), or asks to check a Confluence spec before refinement or implementation. Doc-only by default; optionally grounds claims against Jira issues and local repos under /home/mudittiwari/dev/repos when explicitly asked. Local report by default; posts a comment back to the Confluence page only when explicitly requested and only after verifying the page version is still current.
+description: Review a Confluence document (PRD, design doc, runbook, ADR, spec) for completeness, correctness, ambiguity, staleness, and structure, and emit a severity-ranked report. Use when the user shares an atlassian.net/wiki URL or Confluence page ID, names a page to review ("review the X design doc"), or asks to check a Confluence spec before refinement or implementation. Doc-only by default; optionally grounds claims against Jira issues and local repos under ~/dev/repos when explicitly asked. Local report by default; posts a comment back to the Confluence page only when explicitly requested and only after verifying the page version is still current.
 ---
 
 # Confluence Document Review
@@ -86,7 +86,7 @@ Jira", "verify against the code", `--ground`):
   that don't exist, are Done while the doc calls them planned, or whose
   summary contradicts the doc.
 - Extract file paths, service names, endpoints, and repo names; check them
-  against `/home/mudittiwari/dev/repos` (`ls`, `git grep`) and flag references
+  against `~/dev/repos` (`ls`, `git grep`) and flag references
   to code that doesn't exist or has clearly diverged.
 - Grounding findings must state exactly what was checked and how; anything
   not checked is reported as "not verified", never as fact.
