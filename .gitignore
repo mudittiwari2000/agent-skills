@@ -1,0 +1,24 @@
+# Never commit real secrets — only secrets/.env.example belongs in the repo.
+*.env
+.env*
+!secrets/.env.example
+
+# Organisation specifics live in the private overlay, never here.
+overlay/
+agent-skills-private/
+denylist.txt
+secrets.conf
+
+# Per-machine state written by skills.
+skills/test-skill-branch/branches.tsv
+
+# Dependencies and build output (install.sh runs `npm ci` per skill).
+node_modules/
+__pycache__/
+*.pyc
+
+# Local-only files
+*.local
+*.local.*
+tmp/
+.DS_Store

@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# Block commits that would publish secrets or organisation-specific strings.
+# Enabled by install.sh (git config core.hooksPath .githooks).
+exec "$(git rev-parse --show-toplevel)/scripts/check-public-safe.sh"

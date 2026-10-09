@@ -1,0 +1,11 @@
+{
+  "name": "rca-report-scripts",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Helper scripts for the rca-report skill (Mermaid to PNG rendering).",
+  "license": "MIT",
+  "type": "module",
+  "dependencies": {
+    "playwright-core": "^1.63.0"
+  }
+}

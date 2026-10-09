@@ -1,0 +1,42 @@
+name: checks
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  public-safety:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      # Generic secret shapes over the whole history. The organisation
+      # denylist lives in the private overlay, so it runs locally (pre-commit).
+      - run: scripts/check-public-safe.sh --all
+      - run: scripts/check-public-safe.sh --history
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Shell syntax
+        run: for f in install.sh doctor.sh lib/*.sh scripts/*.sh skills/*/scripts/*.sh; do [ -f "$f" ] && bash -n "$f"; done
+      - name: Python syntax
+        run: python3 -m py_compile lib/*.py scripts/*.py skills/*/scripts/*.py
+      - name: Marketplace skill list matches skills/
+        run: python3 scripts/sync-marketplace.py --check
+      - name: Install into every harness and verify
+        run: |
+          bash install.sh --harness all --no-deps
+          bash doctor.sh --harness all --offline || true   # secrets are absent in CI
+          for h in .claude .codex .agents; do
+            n=$(find "$HOME/$h/skills" -maxdepth 1 -type l | wc -l)
+            echo "$h: $n skills linked"; [ "$n" -gt 0 ]
+          done

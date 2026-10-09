@@ -1,0 +1,28 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "mudit-agent-skills",
+  "description": "Grounded engineering-workflow skills: MR and doc review, review-comment resolution, CI/deploy monitoring, RCA write-ups, scope audits, estimation and feature-flag release tracking.",
+  "owner": {
+    "name": "Mudit Tiwari"
+  },
+  "plugins": [
+    {
+      "name": "agent-skills",
+      "description": "All skills in this repo. Organisation specifics load from an optional private overlay (see README).",
+      "source": "./",
+      "strict": false,
+      "skills": [
+        "./skills/confluence-review",
+        "./skills/jira-story-estimation",
+        "./skills/monitor-dev-ci",
+        "./skills/monitor-stage-ci",
+        "./skills/mr-comment-resolution",
+        "./skills/mr-review",
+        "./skills/prod-flag-ledger",
+        "./skills/rca-report",
+        "./skills/scope-audit",
+        "./skills/test-skill-branch"
+      ]
+    }
+  ]
+}
