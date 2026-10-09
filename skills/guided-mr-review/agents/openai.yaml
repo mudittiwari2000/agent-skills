@@ -1,0 +1,4 @@
+interface:
+  display_name: "Guided MR Review"
+  short_description: "Brief you on what to judge in a GitLab MR, then walk you through it"
+  default_prompt: "Use $guided-mr-review to prepare me to review this GitLab merge request myself: what's already verified, and the few places that need my judgement."

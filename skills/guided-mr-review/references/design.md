@@ -25,8 +25,9 @@ which few decisions are theirs.
   comments, even after controlling for confounders. Alphabetical order (the
   usual default) puts problematic files no higher than chance, and ordering
   by the code diff does better.
-  - Fregnan et al., *First Come First Served*: https://arxiv.org/pdf/2306.06956
-  - Bagirov et al., 51,566 reviews in an industrial setting: https://arxiv.org/pdf/2609.22610
+  - Bagirov et al., *Assessing the Impact of File Ordering Strategies on Code
+    Review Process*: https://arxiv.org/pdf/2306.06956
+  - *Does Order Matter?* (file ordering and review effectiveness): https://arxiv.org/pdf/2609.22610
 - **Developers want better order.** In a survey of 1,355 developers, only
   about 10% find alphabetical order optimal. Most want dependency-aware or
   customizable ordering, and say alphabetical order increases context
@@ -38,8 +39,10 @@ which few decisions are theirs.
   al.: https://link.springer.com/10.1007/s10664-022-10123-8
 - **Checklists help less than you'd expect.** Guidance helps on simple
   reviews, but no strong link to performance was found overall. That argues
-  for a few sharp questions, not long checklists. Same body of work, summarised
-  in https://arxiv.org/pdf/2306.06956.
+  for a few sharp questions, not long checklists. This came from a search
+  summary of an experiment on review guidance, whose primary paper was not
+  checked. Treat it as a hint. For the wider literature see the systematic
+  review at https://arxiv.org/pdf/2103.08777.
 - **Route attention by risk.** Spend human review on what is costly to get
   wrong, judged by blast radius and reversibility, and let automation take the
   mechanical checks.

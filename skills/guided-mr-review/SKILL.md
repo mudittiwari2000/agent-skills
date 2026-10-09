@@ -1,6 +1,6 @@
 ---
 name: guided-mr-review
-description: Guide the user through reviewing a GitLab merge request themselves, instead of reviewing it for them. Produces a one-screen Review Brief listing what has already been verified (so they can skip it) and the 2–5 places that need human judgement, ranked by risk. Each place gets the question to answer, where to look and what each answer means for approval. With --walk, goes through those places one at a time, records the user's verdicts and drafts their review comments in their voice. Use when the user says "guide me through this MR", "what should I look at in !123", "walk me through this review", "help me review this", "what do I need to check before approving", or invokes /guided-mr-review with an MR URL, IID or branch. Reuses mr-review's fetch and verification. Never approves, posts or comments unless the user explicitly asks.
+description: Guide the user through reviewing a GitLab merge request themselves, instead of reviewing it for them. Produces a one-screen Review Brief listing what has already been verified (so they can skip it) and the 2–5 places that need human judgement, ranked by risk. Each place gets the question to answer, where to look and what each answer means for approval. With --walk, goes through those places one at a time, records the user's verdicts and drafts their review comments in their voice. Use when the user wants to review an MR themselves and asks where to look: "guide me through this MR", "what should I look at in !123", "walk me through this review", "help me review this MR", "what do I need to check before approving !123", or /guided-mr-review with an MR URL, IID or branch. Not for having the agent review the MR and report findings (use mr-review), nor for documents (use confluence-review). Reuses mr-review's fetch and verification. Never approves, posts or comments unless the user explicitly asks.
 argument-hint: <MR URL | IID | branch> [--walk]
 metadata:
   tags: [code-review, GitLab, reviewer, guidance]
@@ -40,14 +40,16 @@ user, and record what you learn where the skill says to.
 
 Also apply `mr-review`'s overlay profile (`overlays/mr-review/profile.md`) when
 present. Its repo rows tell you how to run a repo's checks, and they are the
-main thing this skill needs. Its own profile is only for reviewer-side
+main thing this skill needs. This skill's own profile
+(`overlays/guided-mr-review/profile.md`) is optional and only for reviewer-side
 conventions, such as where to see a change running (which environment, which
 test account) or the house wording for review comments.
 
 ## Inputs
 
-- An MR URL, IID or branch, or nothing to use the current working tree (same
-  forms `mr-review` accepts).
+- An MR URL, IID or branch (same forms `mr-review` accepts). With no target,
+  review the current working tree: pass `--working-tree` in step 1. That mode
+  has no MR, so step 6 is unavailable.
 - `--walk` (or "walk me through it"): after the brief, go through the stops
   interactively. Without it, stop after the brief and offer the walk in one
   line.
@@ -66,6 +68,8 @@ the same repo and stop.
 
 ```bash
 bash "$MR_REVIEW_DIR/scripts/fetch_mr.sh" "<MR-URL | IID | branch>"
+# no target given:
+bash "$MR_REVIEW_DIR/scripts/fetch_mr.sh" --working-tree
 ```
 
 Record every printed field exactly as `mr-review` step 1 describes (`WORKTREE`,
@@ -89,11 +93,11 @@ output is shorter. You also inherit mr-review's duty to add or correct a
 repo-profile row when you learn something a future review would otherwise have
 to rediscover. Rows for organisation repos go in the overlay.
 
-Keep three lists as you go:
+Keep four lists as you go:
 
 - **Verified:** each check you ran, the exact command and its result. Also each
   question you settled by reading code, as a fact with its `file:line` (for
-  example "no global `h2` styles: searched `apps/*/**/*.css`").
+  example "no other caller passes `null`: `git grep -n 'parseDate('`").
 - **Defects:** problems you have proven, with `file:line` and the trigger.
   These go in the brief as facts. A code comment or MR-description claim that
   the code contradicts is a proven defect too: cite both the claim and the code
@@ -139,13 +143,15 @@ Most risky first.
 
 For each stop write:
 
-- **Where:** the primary `file:line`, plus the partner location(s) that make it
-  matter.
+- **Where:** the primary `file:line`, which must be a line this MR changes, so
+  a comment can be anchored there. Then any partner locations that make it
+  matter. Partners may be anywhere, including unchanged shared code.
 - **Why you:** one line on why a human must decide this, and why the code
   cannot settle it.
 - **Question:** one question the user can answer yes or no, or with a short
   choice. It must not hint at the answer you would give.
-- **Look at:** at most two things to open or run to answer it. Name any
+- **Look at:** at most two things to open or run to answer it. The partners
+  in Where do not count toward the two. Name any
   prerequisite, such as an environment, a test account or a viewport. The
   overlay may say where a change can be seen running.
 - **If yes / if no**, or **If A / If B** for a short-choice question: what each
@@ -164,8 +170,7 @@ Print it, and save the exact text to `$WORKTREE.brief.md`.
 End with the **Approve if** line: the condition for approval stated in terms
 of the stops, for example "approve if 1 is intended and 3 is fixed". For a stop
 that is a visual or on-device check, the condition is that it "passes your
-look". Then, when
-`--walk` was not given, offer the walk in one line.
+look". Then, only when `--walk` was not given, offer the walk in one line.
 
 ### 5. Walk (only with --walk, or when the user asks)
 
@@ -182,14 +187,20 @@ Take the stops in brief order. For each one:
    - **Skip:** not my call, or not now.
 3. For Concern or Question, take the user's own words. Ask one follow-up only if
    the comment would otherwise be unclear to the author.
-4. If the user asks what you think, tell them, with your evidence. Never give
-   your view before they answer, unless they ask.
+4. If the user's words are about a different stop or line than the current
+   one, say so and anchor that comment to the changed line it is about. Every
+   draft comment is anchored to a line the MR changes.
+5. If the user asks what you think, tell them, with your evidence. Otherwise
+   never give your view, before or after their verdict.
+
+Record each follow-up, and each view you gave on request, in the walk record.
 
 After the last stop, print:
 
 - a table with one row per stop: number, location, verdict and a one-line note;
 - **draft comments** for every Concern and Question. Write them in the user's
-  voice:
+  voice, keeping their words. You may append one evidence pointer, such as
+  `(see layout.tsx:302)`, when it helps the author find the place:
   - short, specific and anchored to `file:line`;
   - labelled `question:` or `suggestion:`, or `blocking:` only when the user
     called it blocking;
@@ -197,8 +208,14 @@ After the last stop, print:
   - plain text with no blockquote markers, so they copy cleanly.
 - the proven defects, each as a ready-to-post comment the user can choose to
   include;
-- the **verdict the answers imply**: approve, approve with comments, or request
-  changes. State that the call is the user's.
+- the **verdict the answers imply**. State that the call is the user's.
+  Derive it in this order:
+  1. A Concern the user called blocking, or a proven defect they chose to
+     include, means **request changes**.
+  2. An open Question for the author means **wait for the author** before
+     approving.
+  3. Any other Concern means **approve with comments**.
+  4. Otherwise apply the brief's Approve-if line; if it is met, **approve**.
 
 Save the walk record to `$WORKTREE.walk.md`.
 
@@ -212,14 +229,42 @@ below.
   `python3 "$MR_REVIEW_DIR/scripts/gitlab_review.py" post --mr-url "$WEB_URL"
   --report <file> --head-sha "$HEAD_SHA"`. That helper checks the live head
   first. On `STALE_REVIEW`, stop and offer to re-run against the new head.
-- **Post inline comments:** ask once to confirm the list. Then, for each
-  comment, take `base_sha`, `start_sha` and `head_sha` from the MR's
-  `diff_refs` (`glab api projects/:id/merge_requests/<iid>`) and create a
-  discussion with a text `position` (`new_path`, `new_line`, or
-  `old_path`/`old_line` for removed lines). Report each created discussion ID.
-  If a position is rejected, fall back to the single note for that comment.
-- **Approve:** run `glab mr approve <iid> -R <project>` only when the user says
-  to approve. Never infer approval from an OK walk.
+Every action targets the reviewed MR explicitly, never the current
+directory's repo. Derive these from `WEB_URL`
+(`https://<host>/<project path>/-/merge_requests/<iid>`):
+
+```bash
+HOST=$(python3 -c 'import sys,urllib.parse as u;print(u.urlsplit(sys.argv[1]).hostname)' "$WEB_URL")
+PROJ=$(python3 -c 'import sys,urllib.parse as u;print(u.urlsplit(sys.argv[1]).path.strip("/").split("/-/")[0])' "$WEB_URL")
+PROJ_ENC=$(python3 -c 'import sys,urllib.parse as u;print(u.quote(sys.argv[1],safe=""))' "$PROJ")
+IID=${WEB_URL##*/merge_requests/}; IID=${IID%%[/?#]*}
+```
+
+- **Post the comments as one MR note:** write them to a file and run
+  `python3 "$MR_REVIEW_DIR/scripts/gitlab_review.py" post --mr-url "$WEB_URL"
+  --report <file> --head-sha "$HEAD_SHA"`. The helper checks the live head
+  first. On `STALE_REVIEW`, stop and offer to re-run against the new head.
+- **Post inline comments:** show the list and get one confirmation. Then:
+  1. Read the live `diff_refs`:
+     `glab api --hostname "$HOST" "projects/$PROJ_ENC/merge_requests/$IID" | jq .diff_refs`.
+     If `diff_refs.head_sha` differs from `$HEAD_SHA`, stop. The line numbers
+     belong to the reviewed head, so offer to re-run instead.
+  2. For each comment, create a discussion on the changed line:
+     ```bash
+     glab api --hostname "$HOST" -X POST "projects/$PROJ_ENC/merge_requests/$IID/discussions" \
+       -f body="<comment>" -f "position[position_type]=text" \
+       -f "position[base_sha]=<base_sha>" -f "position[start_sha]=<start_sha>" \
+       -f "position[head_sha]=$HEAD_SHA" \
+       -f "position[old_path]=<path>" -f "position[new_path]=<path>" -f "position[new_line]=<line>"
+     ```
+     For a removed line, send `position[old_line]` instead of `new_line`. Report
+     each created discussion `id`.
+  3. Collect any comment whose position is rejected into one file, and post it
+     as a single note through `gitlab_review.py` as above.
+- **Approve:** only when the user says to approve, run
+  `glab mr approve "$IID" -R "$HOST/$PROJ" --sha "$HEAD_SHA"`. The `--sha`
+  makes GitLab refuse if new commits arrived after the review; if it refuses,
+  report that and stop. Never infer approval from an OK walk.
 
 ### 7. Clean up
 
@@ -233,10 +278,11 @@ This keeps `$WORKTREE.brief.md` and `$WORKTREE.walk.md`.
 
 - Every stop and every verified fact is anchored to `file:line` in `$WORKTREE`.
 - A check you did not run is "not verified", never assumed green.
-- Questions never lead the answer. Your view comes only when asked, or after
-  the user's verdict.
-- Stay inside the MR's scope. A finding about shared code the MR didn't
-  change is a note for a follow-up ticket, not a stop.
+- Questions never lead the answer. Your view comes only when the user asks.
+- Stay inside the MR's scope. A stop's primary anchor is a changed line;
+  unchanged code may appear only as a partner. A problem that would exist
+  without this MR, even in code the MR touches, is a note for a follow-up
+  ticket, not a stop.
 - Do not inflate. Fewer, sharper stops beat a long checklist, and "nothing
   needs you here" is a fine outcome.
 - The worktree is read-only. Never push, amend or approve on the user's behalf

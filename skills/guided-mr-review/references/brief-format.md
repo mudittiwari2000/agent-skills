@@ -5,8 +5,8 @@ blockquotes, so any part can be copied.
 
 Budget rules when it runs long, in this order:
 1. Merge trivial verified items onto one line.
-2. Shorten commands to their essential part (`jest toaster confirm-modal`).
-3. Put a stop's partner locations on its "Look at" line instead of the header.
+2. Shorten commands to their essential part (`pytest tests/billing`).
+3. Keep only the partner locations a reader needs to answer the question.
 4. Drop the lowest-risk stop and count it in the "dropped" line.
 
 ```
@@ -16,7 +16,9 @@ Budget rules when it runs long, in this order:
 ## Already verified — skip these
 - <check or fact> → <result>   (`<command>` or `file:line`)
 - ...
-- Not verified: <check> — <why> (only if any)
+
+## Not verified — look yourself if it matters   (omit when empty)
+- <check or path> — <why it could not be verified>
 
 ## Proven defects  (omit the section when there are none)
 - `file:line` — <defect and its trigger>  → <smallest fix>
@@ -34,6 +36,7 @@ Budget rules when it runs long, in this order:
 <condition stated in terms of the stops and defects>
 
 Walk through the stops one by one? Re-run with --walk or say "walk me".
+(this last line only when --walk was not given)
 ```
 
 ## Rules for the content
@@ -46,9 +49,9 @@ Walk through the stops one by one? Re-run with --walk or say "walk me".
   comment or description claim contradicted by the code also counts; cite both.
   Anything less is a stop, not a defect.
 - **Question** must be answerable without reading this skill. It must not
-  smuggle in a verdict. For example, ask "Is moving every mobile toast to the
-  bottom intended, including export and newsletter?". Don't ask "This
-  wrongly moves every toast, right?".
+  smuggle in a verdict. For example, ask "Should the new retry also apply to
+  the nightly batch job, not only the API path?". Don't ask "This wrongly
+  retries the batch job too, right?".
 - **If yes / If no** (or **If A / If B** for a short-choice question) use these
   outcomes: approve as is · leave a comment · ask the author first · request
   changes. At most one qualifier per outcome.
@@ -59,10 +62,15 @@ Walk through the stops one by one? Re-run with --walk or say "walk me".
 
 ```
 # Walk — !<iid> @ <HEAD_LABEL>
+MR: <WEB_URL> · head: <full HEAD_SHA> · posting allowed: <EXTERNAL_POSTING_ALLOWED>
 
 | # | Where | Verdict | Note |
 |---|---|---|---|
 | 1 | `file:line` | OK / Concern / Question / Skip | <user's words, short> |
+
+## Follow-ups and views given on request
+- Stop <n>: asked "<follow-up>" → "<answer>"
+- Stop <n>: user asked my view → <view, one line, with evidence>
 
 ## Draft comments
 - `file:line` — question: <text>
@@ -72,5 +80,6 @@ Walk through the stops one by one? Re-run with --walk or say "walk me".
 - `file:line` — <ready-to-post comment>
 
 ## Implied verdict
-<approve | approve with comments | request changes> — your call.
+<request changes | wait for the author | approve with comments | approve>, by
+the rule in SKILL.md step 5 — your call.
 ```
