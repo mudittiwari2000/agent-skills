@@ -23,19 +23,119 @@ that reads `<dir>/<name>/SKILL.md`.
 | [prod-flag-ledger](skills/prod-flag-ledger) | Ledger of every feature flag a story adds; from release notes, works out which flags must go on in prod for that release. |
 | [test-skill-branch](skills/test-skill-branch) | Points a local skills/plugin checkout at an unmerged skill branch (or back at main) while keeping it synced. |
 
-## Install
+## Setup
 
-### Any harness (recommended)
+Follow these steps once per machine. They work on macOS, Linux and WSL.
+
+### 1. Prerequisites
+
+- `bash`, `git` and `python3` (3.9 or later).
+- `npm`, only for skills that ship Node scripts (currently `rca-report`).
+- At least one harness: Claude Code, Codex, or anything that reads
+  `<dir>/<name>/SKILL.md`.
+- For a private overlay on GitHub: an SSH key that can read it
+  (`ssh -T git@github.com` should greet you).
+
+### 2. Clone this repo
 
 ```bash
+mkdir -p ~/dev/repos
 git clone https://github.com/mudittiwari2000/agent-skills.git ~/dev/repos/agent-skills
-bash ~/dev/repos/agent-skills/install.sh            # every harness found on this machine
-bash ~/dev/repos/agent-skills/doctor.sh             # verify
 ```
 
-`install.sh` symlinks each skill into the harness's skills directory, so a
-`git pull` updates every harness at once. Re-run it after pulling to pick up new
-or renamed skills.
+Any location works. The paths below assume this one.
+
+### 3. Add your private overlay (optional)
+
+Skip this step if you only want the public skills. Otherwise clone your overlay
+**next to** this repo so `install.sh` finds it on its own:
+
+```bash
+git clone git@github.com:<you>/agent-skills-private.git ~/dev/repos/agent-skills-private
+```
+
+No overlay yet? Start one. It is just folders, all optional:
+
+```bash
+mkdir -p ~/dev/repos/agent-skills-private/{overlays,skills}
+cd ~/dev/repos/agent-skills-private && git init -b main
+# then add overlays/<skill>/profile.md, secrets.conf, denylist.txt as needed
+# (see "Private overlay" below), and push it to a PRIVATE remote
+```
+
+### 4. Preview, then install
+
+```bash
+cd ~/dev/repos/agent-skills
+bash install.sh --dry-run      # shows every link it would create; changes nothing
+bash install.sh                # links skills into every harness it detects
+```
+
+- If the dry run says a **real folder occupies** a skill's slot (for example
+  an older copy of the same skill), re-run with `--replace`. The old folder
+  is moved to `~/.local/state/agent-skills/backup/<timestamp>/`, never deleted.
+- If it says **no harness detected**, name one: `--harness claude`,
+  `--harness codex`, `--harness all`, or `--target <dir>` for another harness.
+- The overlay lives somewhere else? Pass `--overlay <dir>`.
+
+### 5. Secrets (only for skills that call APIs)
+
+```bash
+bash install.sh --bootstrap-secrets   # creates ~/.config/agent-secrets/.env (chmod 600)
+$EDITOR ~/.config/agent-secrets/.env  # fill in the keys you use
+```
+
+The file starts from [secrets/.env.example](secrets/.env.example). Values never
+go in either repo, so on a new machine you restore this file from your password
+manager. If your organisation already uses other key names, map them in the
+overlay's `secrets.conf` instead of renaming anything (see [Secrets](#secrets)).
+
+### 6. Verify
+
+```bash
+bash doctor.sh             # add --offline to skip the API reachability checks
+```
+
+It should end with `ALL CHECKS PASSED`. Every line that isn't `OK` names the
+command that fixes it.
+
+### 7. Start a new session
+
+Harnesses load skills when a session starts, so open a new Claude Code or Codex
+session. You can then use any skill by name, for example `/mr-review <MR URL>`.
+
+### Updating
+
+```bash
+git -C ~/dev/repos/agent-skills pull
+git -C ~/dev/repos/agent-skills-private pull   # if you use an overlay
+bash ~/dev/repos/agent-skills/install.sh       # picks up new or renamed skills
+```
+
+Edits to an existing skill are live straight away, because every harness links
+to this checkout. Re-running `install.sh` is only needed when skills are added,
+renamed or removed.
+
+### Uninstalling
+
+```bash
+bash ~/dev/repos/agent-skills/install.sh --uninstall --harness all
+```
+
+This removes only the links this repo created. Your own skills and anything
+else in those folders stay.
+
+### Troubleshooting
+
+| Symptom | Fix |
+|---|---|
+| A skill doesn't show up | Start a new session, then run `bash doctor.sh` and follow the line that isn't `OK` |
+| `WARN … a real file/dir occupies …` | `bash install.sh --replace` (backs up the old copy) |
+| `rca-report` scripts fail with a missing module | `bash install.sh` again with `npm` on PATH; or `npm ci` in `skills/rca-report/scripts` |
+| A skill ignores your organisation's conventions | Check that `doctor.sh` shows the overlay `OK`, and that `overlays/<skill>/profile.md` exists in it |
+| A commit is blocked by `check-public-safe` | The commit contains a secret or a string from your overlay's `denylist.txt`. Move that content into the overlay, or make it generic. |
+
+### `install.sh` options
 
 | Flag | Effect |
 |---|---|
@@ -51,7 +151,7 @@ or renamed skills.
 Requires bash, git and python3 (macOS, Linux, WSL). Skills with Node scripts
 (`rca-report`) also need npm.
 
-### Claude Code plugin
+### Alternative: Claude Code plugin
 
 ```
 /plugin install agent-skills --marketplace mudittiwari2000/agent-skills
