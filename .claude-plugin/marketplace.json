@@ -13,6 +13,7 @@
       "strict": false,
       "skills": [
         "./skills/confluence-review",
+        "./skills/guided-mr-review",
         "./skills/jira-story-estimation",
         "./skills/monitor-dev-ci",
         "./skills/monitor-stage-ci",

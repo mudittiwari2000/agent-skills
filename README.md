@@ -13,6 +13,7 @@ that reads `<dir>/<name>/SKILL.md`.
 | Skill | What it does |
 |---|---|
 | [mr-review](skills/mr-review) | Reviews a GitLab MR against the whole codebase in an isolated worktree: traces callers, runs the repo's own checks, checks the MR's tests catch the bug, emits a severity-ranked report. Posts to GitLab or Jira only when asked. |
+| [guided-mr-review](skills/guided-mr-review) | Prepares *you* to review an MR: a one-screen brief of what's already verified and the 2–5 places that need your judgement, ranked by risk, each with the question to answer. `--walk` takes you through them and drafts your comments. |
 | [confluence-review](skills/confluence-review) | Reviews a Confluence doc (PRD, design doc, runbook, ADR) for completeness, correctness, ambiguity and staleness; optional grounding against Jira and code. |
 | [mr-comment-resolution](skills/mr-comment-resolution) | Works through review comments on your own MR: verifies each, fixes what belongs, tickets what does not, replies with a table the reviewer can check. |
 | [scope-audit](skills/scope-audit) | A fresh agent that sees only the acceptance criteria, your explicit asks and the diff classifies every hunk as required, supporting, not required or dead. |

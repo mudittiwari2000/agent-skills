@@ -9,6 +9,10 @@ Review a merge request against the **real repository state**, not the diff in
 isolation. The diff tells you *what* changed; the job is to judge whether it is
 correct *given the rest of the code that uses it*.
 
+When the user wants to review the MR themselves and needs to know where to
+look, use the sibling `guided-mr-review` skill instead; it reuses this skill's
+fetch and verification.
+
 Repos live under `~/dev/repos` (override with `REPOS_ROOT`). `glab` must be
 authenticated to the GitLab host. JIRA REST credentials are loaded by
 `scripts/jira_review.py` through the agent-skills secrets resolution;
@@ -114,15 +118,18 @@ to confirm findings, and report exactly what you ran.
   `node_modules`. Reuse the main clone's environment (`$REPO_DIR/.venv`,
   `$REPO_DIR/venv`, or whatever the repo's test runner probes) read-only, and
   never install into the user's environments to make a check run. For a Node
-  workspace, symlink `$REPO_DIR/node_modules` (and any per-app
-  `node_modules`) into the worktree. Remove the symlinks before cleanup. The
+  workspace, symlink `$REPO_DIR/node_modules` and every nested `node_modules`
+  the primary clone has under `apps/*` and `packages/*` into the matching
+  worktree paths. Remove the symlinks before cleanup. The
   borrowed deps can lag the MR's lockfile, so a "Cannot find module" failure
   is the environment until a base run shows otherwise. If a check cannot run,
   record "not verified" and why.
 - **Baseline any failure:** before you attribute a failing check to the MR,
   run the same command at `BASE_SHA` in a second throwaway worktree
-  (`git worktree add --detach <scratch>/base "$BASE_SHA"`). Remove that
-  worktree afterwards. Report failures that already exist on base as
+  (`git worktree add --detach <scratch>/base "$BASE_SHA"`, where `<scratch>`
+  is the session's scratch or state directory). Remove that worktree
+  afterwards with `git worktree remove --force`. `--force` is expected,
+  because copying the MR's specs into it makes it dirty. Report failures that already exist on base as
   pre-existing, not as findings. Only failures introduced at `HEAD_SHA`
   count against the MR.
 - **Run the relevant suites, not only the MR's own tests:** that includes
@@ -132,7 +139,9 @@ to confirm findings, and report exactly what you ran.
   the base worktree and run them against the base code. A regression test that
   passes there does not guard the fix.
 - **Check mergeability against the live target:** `git fetch origin
-  "$TARGET_BRANCH"`, then `git merge-tree --write-tree --name-only HEAD
+  "$TARGET_BRANCH"` (worktrees share refs, so this also updates the primary
+  clone's `origin/$TARGET_BRANCH` tracking ref; that is harmless and expected),
+  then `git merge-tree --write-tree --name-only HEAD
   origin/"$TARGET_BRANCH"`. In repos that bump a version on every MR, a stale
   bump conflicts in the manifest and lockfile. That is a real finding even
   when the diff itself is clean.
