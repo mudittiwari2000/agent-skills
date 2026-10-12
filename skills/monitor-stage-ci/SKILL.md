@@ -163,6 +163,16 @@ feature-flag definitions):
 3. Hand that job to the user exactly as in step 2. Don't play it without an
    explicit ask. The user may want to tell the team first.
 
+## 5b. Re-read the story before testing or announcing
+
+Requirements can change after the merge. Before running stage QA, moving the
+story or asking anyone to test it, read the story's current acceptance criteria
+and its comments since the merge (struck-through rules, a BA or PO asking for a
+change). If a rule the release implements was withdrawn or changed, stage
+tests the old behaviour: stop, report the change with the comment link, and
+let the user decide (usually a follow-up ticket first). Never post a testing
+request for behaviour the requirements no longer ask for.
+
 ## 6. Optional: post-deploy stage QA
 
 With `--qa`, or when the user asks to "test it on stage", call your
@@ -250,6 +260,8 @@ and stop. After the move, give the user the Jira key and the link
 (`https://<your-tracker>/browse/<key>`) with the new status.
 
 ## Guardrails
+
+- Never announce a release for testing without re-reading the story's current ACs and post-merge comments (step 5b).
 
 - Never play, retry, cancel or re-run a job without an explicit ask, and then
   only the named job.
