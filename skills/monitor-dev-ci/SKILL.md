@@ -119,15 +119,28 @@ Run one background watcher (Bash with `run_in_background: true`) that exits on
 "still running":
 
 ```bash
+# GitLab job JSON can carry raw control characters (e.g. in commit messages),
+# which jq rejects; parse leniently, and give up after repeated empty reads
+# instead of looping for ever on a parse or auth error.
+field() { python3 -c 'import sys,json
+d=json.loads(sys.stdin.read(),strict=False); j=sys.argv[1]
+if j: print(next((x.get("status","") for x in d if isinstance(x,dict) and x.get("name")==j),"") if isinstance(d,list) else "")
+else: print(d.get("status","") if isinstance(d,dict) else "")' "$1" 2>/dev/null; }
+miss=0
 while true; do
-  st=$(glab api "projects/$P/pipelines/$ID/jobs?per_page=100" | jq -r --arg j "$DEPLOY_JOB" '.[] | select(.name==$j) | .status')
-  ps=$(glab api "projects/$P/pipelines/$ID" | jq -r .status)
+  st=$(glab api "projects/$P/pipelines/$ID/jobs?per_page=100" 2>/dev/null | field "$DEPLOY_JOB")
+  ps=$(glab api "projects/$P/pipelines/$ID" 2>/dev/null | field "")
+  if [ -z "$st" ] || [ -z "$ps" ]; then miss=$((miss+1)); [ $miss -ge 5 ] && { st=unreadable; break; }; else miss=0; fi
   case "$st" in success|failed|canceled|skipped|manual) break;; esac
   case "$ps" in failed|canceled) break;; esac
   sleep 30
 done
 echo "deploy: $st / pipeline: $ps"
 ```
+
+`unreadable` means the watcher could not read the job list five times in a row
+(API, auth or parse error). Report it and check by hand; never treat it as
+"still running".
 
 Don't chain foreground `sleep`s. Keep the user posted in one line when it starts.
 
