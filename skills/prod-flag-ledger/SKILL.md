@@ -49,7 +49,8 @@ Entry shape (`.flags[]`):
 | `merge_commit` | Commit on the default branch that first carries the flag check. Null until merged; filled in at the first release check that can see it. |
 | `first_version` | First release version/tag containing `merge_commit` (e.g. `<app>-v1.4.2`). |
 | `environments.<env>` | `{state: on/off/unknown, as_of: YYYY-MM-DD, source: user/observed}`. Only the user or a read of the provider sets these. |
-| `prod_preconditions[]` | Anything that must be true before turning it on in prod: another flag on first, a data backfill, a cutover. |
+| `prod_preconditions[]` | Anything that must be true before turning it on in prod: another flag on first, a data backfill, a cutover, or a follow-up ticket a review deferred (e.g. SEO meta owned by another story). |
+| `retirement` | `{ticket, steps[]}`: the ticket that removes the flag and what it must do (drop the gate, point links at the final URLs). Set when the follow-up is raised. |
 | `status` | `pending_prod`, then `on_in_prod`, or `retired` (flag code removed) / `abandoned` (MR closed unmerged). |
 | `history[]` | Dated events: added, env changed, shipped in a release, retired. |
 
@@ -138,6 +139,11 @@ Report, as a short table per bucket:
 Then update the ledger: set `first_version` for flags that ship, and add a
 `history` event `shipped in <tag>`. Do **not** mark anything `on_in_prod`
 until the user confirms they switched it on.
+
+**From code review.** When a reviewer's point is deferred to another ticket because
+the flag keeps it off in prod (a missing canonical, a rollback concern), add the owning
+ticket to `prod_preconditions`. That way the release check stops the flag flip until it
+ships. When a review raises a flag-retirement follow-up, set `retirement`.
 
 ## Mode 3: Update state
 

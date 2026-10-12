@@ -124,6 +124,18 @@ into the MR just to close the comment. Good tests:
   store call changes every caller on every brand).
 - **Intended:** you can quote a business rule or AC that requires exactly what the
   reviewer is questioning.
+- **Intended, owned elsewhere:** the ticket puts the point out of scope *and*
+  another ticket owns it. Quote both: the out-of-scope line here and the owning
+  ticket's rule. Then **close the gap the deferral leaves**, so the missing piece
+  cannot reach users before its owner ships. For example, make the owner a
+  precondition of the release step or the flag flip, and say in the reply that you
+  did. "Someone else's ticket" alone is not an answer to a must-fix.
+- **Already decided:** the point re-raises something settled earlier, by the user
+  or by an earlier review round (another reviewer, an automated review). Cite the
+  decision and its basis. Offer the route to reopen it, e.g. the BA or product owner
+  when an AC drives it. Never quietly re-litigate a decision the user made.
+- **Asked to restore something a scope audit removed:** answer with the measured
+  cost of leaving it out, and offer to add it back. Do not restore it on your own.
 
 ## 5. Fix, test, gate, commit
 
@@ -179,6 +191,16 @@ and evidence declarations) rather than calling the tracker's create tool cold. T
 
 ## 7. Reply so the reviewer can check it
 
+**Get the user's go-ahead before pushing back on a blocking item.** Replies go out
+in the user's name to a colleague. When any finding marked blocking ("must fix",
+"before merge") lands in **Intended** or **Disagree**, show the user the verdict
+table, the evidence and what you will post, and ask before posting. Fix-only rounds
+need no extra stop.
+
+**A remark that wants only a code comment** (a clarifying comment, a rename in a
+docstring) still moves the head and stales any QA recorded against the tree. Prefer
+answering it in the reply unless the user or reviewer wants the commit.
+
 Reply **inside each thread**. Only when a thread genuinely cannot be replied to (it is
 not a resolvable discussion, or the API refuses) fall back to a new MR note — and
 **@-mention the reviewer who left the finding**, because a standalone comment that
@@ -190,6 +212,11 @@ does not name them is easy to miss. Structure, in this order:
 3. **Cite the commit SHA** that carries the fixes, and **link any tickets**.
 4. **Close with what was re-verified — and what was not.** The "not re-run" line is
    as important as the "passed" line.
+
+**Posting long replies:** write each body to a file and post it as a file field
+(for example `glab api -X POST .../discussions/<id>/notes -F "body=@reply.md"`).
+Then **read the posted note back** and check it holds the text, not the literal
+path, and that the threads you meant to leave open are still open.
 
 Tone: credit a good catch plainly, and where a finding was right say what made it
 right — often the reachability is narrower, or the cost bigger, than the reviewer
@@ -205,6 +232,9 @@ Resolve only `resolvable` threads you actually addressed.
   "fine as a follow-up ticket") **or the user asked you to resolve**. Otherwise
   leave it open with a clear closing question, and say why.
 - **Disagree** → leave open for the reviewer to concede or reply.
+- **Intended** on a blocking item → leave open too. The reviewer marked it blocking,
+  so it is theirs to accept. Expect the MR to report "blocking discussions
+  unresolved" until they do, and tell the user that is why.
 
 Never resolve a thread to tidy away feedback you did not act on. Say in your report
 that the reviewer can reopen any thread.
@@ -248,3 +278,11 @@ A review round changes facts other people read. After the push:
 - **9 October 2026** — organisation specifics moved to the overlay; the rebase rule
   now matches the no-force-push guardrail (rebase before the review starts, or only
   with the reviewer's explicit agreement).
+- **12 October 2026** — revised after a review round on a feature MR where both
+  blocking findings were by design. Added: the "Intended, owned elsewhere" pattern,
+  which quotes both tickets and closes the gap the deferral leaves; "Already decided",
+  which cites the earlier decision and the route to reopen it; how to answer a request
+  to restore what a scope audit removed; asking the user before pushing back on a
+  blocking item; answering comment-only remarks in the reply rather than moving the
+  head; posting long replies from a file and reading them back; and leaving
+  blocking-but-intended threads open.
