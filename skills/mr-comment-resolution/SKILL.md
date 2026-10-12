@@ -156,6 +156,11 @@ commands, from where the repo runs them:
   the real one (redirect to a file, then check `$?`).
 - When a type check shows errors, `git blame` them: are they on lines you wrote?
 - Run the secret scan and any pre-push rule the repo documents.
+- **Compare the commit's diff stat with what you staged** (`git show --stat HEAD`
+  against `git diff --cached --stat`) before pushing. A formatting pre-commit hook can
+  reformat whole files and turn a 14-line change into hundreds of lines of review
+  noise. If it did, undo the commit, redo the change and commit without the hook,
+  running its safety checks (e.g. the secret scan) by hand.
 
 **Do not rewrite history during an active review.** Comments anchor to a head SHA.
 Add a normal commit and push it. A rebase (and the force-push it needs) belongs
@@ -294,3 +299,5 @@ A review round changes facts other people read. After the push:
   blocking-but-intended threads open.
 - **12 October 2026 (later)** — added the rule for pushing to an approved MR: approval
   resets, so warn the user and use a merge, not a force-push.
+- **12 October 2026 (evening)** — added the staged-versus-committed diff check after a
+  formatting hook widened an import-only commit from +14/−14 to +131/−93 before push.
