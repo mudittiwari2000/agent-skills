@@ -132,12 +132,18 @@ to confirm findings, and report exactly what you ran.
   because copying the MR's specs into it makes it dirty. Report failures that already exist on base as
   pre-existing, not as findings. Only failures introduced at `HEAD_SHA`
   count against the MR.
+  When a suite cannot even load at base (a borrowed install that lags the
+  target's dependencies), local runs cannot judge it. Cite the MR pipeline's
+  test job on `HEAD_SHA` for that suite instead, and say so.
 - **Run the relevant suites, not only the MR's own tests:** that includes
   registries, catalogs, manifest and skill-parity tests that enumerate what
   the change adds to.
 - **Prove the new tests bite:** copy the MR's new or changed spec files into
   the base worktree and run them against the base code. A regression test that
   passes there does not guard the fix.
+  Check the copy landed (`cmp` each file) before reading the result: a
+  failed copy re-runs the base specs and passes misleadingly. In zsh, keep
+  file lists in arrays; an unquoted string variable is not word-split.
 - **Check mergeability against the live target:** `git fetch origin
   "$TARGET_BRANCH"` (worktrees share refs, so this also updates the primary
   clone's `origin/$TARGET_BRANCH` tracking ref; that is harmless and expected),
