@@ -164,6 +164,12 @@ reviewer's explicit agreement, and then cite the post-rebase SHA. Check the
 remote's own rules before pushing — commit-message patterns, branch-name patterns —
 instead of discovering them from a rejection.
 
+**Pushing to an approved MR.** Many projects reset approvals on every new commit.
+Before pushing to an approved MR, even a pure merge of the target branch, tell the
+user the approval will likely need redoing, and ask the reviewer to re-approve
+afterwards. Resolve a conflict that only touches a version line by merging the target
+branch into yours (no force-push), then re-run the branch's tests on the merged tree.
+
 Commit message: name the review and separate verdicts, and say what was deliberately
 not changed. Push **before** replying, so the SHA you cite exists.
 
@@ -286,3 +292,5 @@ A review round changes facts other people read. After the push:
   blocking item; answering comment-only remarks in the reply rather than moving the
   head; posting long replies from a file and reading them back; and leaving
   blocking-but-intended threads open.
+- **12 October 2026 (later)** — added the rule for pushing to an approved MR: approval
+  resets, so warn the user and use a merge, not a force-push.
