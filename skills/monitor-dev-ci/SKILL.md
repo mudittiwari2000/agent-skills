@@ -250,8 +250,9 @@ webhook, skip this step and say so in one line.
 - **Announcement call to action (optional).** When the overlay defines a
   stage-deployment announcement (a channel and a message template), add it on a
   successful dev deploy with `--announce-text`, `--announce-channel-name` and
-  `--announce-channel-url`. The alert then ends with the announcement in a code
-  block, ready to copy, and an "Open <channel>" link button. The skill never
+  `--announce-channel-url`. The alert then ends with the announcement as plain
+  `mrkdwn`, not a code block, so a link such as a short commit hash keeps its
+  label when copied. An "Open <channel>" link button follows it. The skill never
   posts the announcement itself: the user copies it when they start the stage
   deployment. A webhook can't post to a second channel, and an interactive
   button would need a backend.

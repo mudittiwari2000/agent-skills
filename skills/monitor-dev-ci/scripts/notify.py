@@ -13,7 +13,7 @@ Usage (dev report with an optional announcement call to action):
         --line "Tag: `my-app-v1.2.3`  Merge commit: <https://...|abc1234>" \
         --link "New tag page — prefilled=https://..." --link "Pipeline=https://..." \
         --code "Tag message" "Plain-language tag message" \
-        --announce-text "@here\nInitiating stage deployment for ..." \
+        --announce-text "@here\nInitiating stage deployment for my-app-v1.2.3\nCommit ID: <https://...|abc1234>" \
         --announce-channel-name "#team-channel" \
         --announce-channel-url "https://<workspace>.slack.com/archives/C123"
 
@@ -64,15 +64,22 @@ def build_payload(args: argparse.Namespace) -> dict:
         blocks.append({"type": "divider"})
         blocks.append(
             {
-                "type": "section",
-                "text": {
-                    "type": "mrkdwn",
-                    "text": (
-                        f"*Next:* copy this into {args.announce_channel_name} "
-                        f"when you start the stage deployment:\n```{args.announce_text}```"
-                    ),
-                },
+                "type": "context",
+                "elements": [
+                    {
+                        "type": "mrkdwn",
+                        "text": (
+                            f"*Next:* copy the message below into {args.announce_channel_name} "
+                            "when you start the stage deployment"
+                        ),
+                    }
+                ],
             }
+        )
+        # Plain mrkdwn rather than a code block, so links keep their labels
+        # (e.g. a short commit hash linked to the commit) when copied.
+        blocks.append(
+            {"type": "section", "text": {"type": "mrkdwn", "text": args.announce_text}}
         )
         if args.announce_channel_url:
             blocks.append(
