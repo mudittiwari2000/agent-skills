@@ -229,6 +229,39 @@ Mention anything that didn't go cleanly (e2e failures, a manual gate, a
 version that was bumped by another MR in the meantime) — briefly, after the
 three outputs.
 
+## 6. Notify (when a notify webhook is configured)
+
+The watch can take a while, so the user may not be looking at the terminal when
+it ends. When the overlay names a notification webhook (for example a Slack
+incoming webhook that can post to one private channel only), post the report
+there as the run's last step, on **every** terminal outcome: deployed, failed,
+waiting on a manual job, canceled, or tag already exists. Without a configured
+webhook, skip this step and say so in one line.
+
+- Read the URL into a variable from the config/secret helper the overlay names.
+  Check its shape (`https://hooks.slack.com/services/...` for Slack), and never
+  echo it, log it, or put it in a file, a commit or the transcript.
+- Build the JSON body with a real serializer (`python3 -c 'import json…'` or
+  `jq -n`), never by string-pasting, so quotes and newlines in the tag message
+  cannot break it.
+- Post with `curl -s -o <file> -w '%{http_code}'` and check for `200` and an
+  `ok` body. On failure, report the status in the terminal; the terminal report
+  still stands, and the run is not failed because of it.
+
+Message shape (Slack `mrkdwn`; links are `<url|text>`):
+
+```text
+<:white_check_mark: | :x: | :hourglass:> <app> <deployed to dev | dev deploy failed | waiting on a manual job>
+Tag: `<tag>`  Merge commit: <commit url|<short sha>>
+<New tag page — prefilled|<new-tag link>>   <Pipeline|<pipeline url>>
+Tag message:
+```<tag message>```
+<one line on anything that didn't go cleanly, or nothing>
+```
+
+On failure, the first line names the failed job and links its log, and the
+new-tag link carries "don't create it until the deploy is fixed".
+
 ## Next: stage
 
 Once the user has cut the tag, `/monitor-stage-ci <tag>` follows the release to
@@ -244,3 +277,5 @@ into one skill that takes the environment as a parameter.
 - Never guess the version from the branch; read it from the merge commit.
 - Never finish a report without the prefilled new-tag link (step 5), unless
   the tag already exists.
+- Never print or store a notify webhook URL; it is a secret even though it can
+  only post to one channel.
