@@ -259,6 +259,34 @@ Without `--qa` there is no QA result, so there is nothing to move on: report
 and stop. After the move, give the user the Jira key and the link
 (`https://<your-tracker>/browse/<key>`) with the new status.
 
+## 8. Notify (when a notify webhook is configured)
+
+The stage watch and QA can take a long time. When the overlay names a
+notification webhook (for example a Slack incoming webhook that can post to one
+private channel only), post the step 7 report there as the run's last step, on
+**every** terminal outcome: on stage and verified, stage deploy failed, waiting
+on a manual job, a dependency gap found (step 5), QA finished (pass, follow-up
+or fail), or stopped because the requirements changed (step 5b). Without a
+configured webhook, skip this step and say so in one line.
+
+Handle the URL and the post exactly as `monitor-dev-ci` step 6 does: read it
+into a variable from the overlay's config/secret helper, check its shape, never
+print or store it, build the JSON with a serializer, and check for `200` / `ok`.
+A failed post is reported in the terminal and never fails the run.
+
+Message shape (Slack `mrkdwn`). The first line names the skill that published
+it, so it can't be mistaken for a `monitor-dev-ci` message:
+
+```text
+*monitor-stage-ci* · <repo short name>
+<:white_check_mark: | :x: | :hourglass: | :warning:> <release unit> <on stage | stage deploy failed | waiting on <job> | blocked: <reason>>
+Stage jobs: <job> <result>, … · <Pipeline|<pipeline url>> · finished <HH:MM UTC>
+Live check: <version match | KVS entries N, diffs M | job result only>
+<Dependency gaps: <job link> … | none>
+<QA: <verdict> — <one line> · <QA evidence|<tracker comment url>> | QA not run>
+<Next: <the one thing the user should do now>>
+```
+
 ## Guardrails
 
 - Never announce a release for testing without re-reading the story's current ACs and post-merge comments (step 5b).
@@ -266,6 +294,7 @@ and stop. After the move, give the user the Jira key and the link
 - Never play, retry, cancel or re-run a job without an explicit ask, and then
   only the named job.
 - Never touch prod jobs, even when they sit in the same pipeline.
+- Never print or store a notify webhook URL (step 8).
 - Never report "on stage" from an overall-green pipeline. Key off the last
   stage job in the chain, and prove the live state where you can (step 4).
 - Never print secrets from your config/secret store or put them in artifacts.

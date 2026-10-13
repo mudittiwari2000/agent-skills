@@ -241,16 +241,27 @@ webhook, skip this step and say so in one line.
 - Read the URL into a variable from the config/secret helper the overlay names.
   Check its shape (`https://hooks.slack.com/services/...` for Slack), and never
   echo it, log it, or put it in a file, a commit or the transcript.
-- Build the JSON body with a real serializer (`python3 -c 'import json…'` or
-  `jq -n`), never by string-pasting, so quotes and newlines in the tag message
-  cannot break it.
-- Post with `curl -s -o <file> -w '%{http_code}'` and check for `200` and an
-  `ok` body. On failure, report the status in the terminal; the terminal report
-  still stands, and the run is not failed because of it.
+- Post with `scripts/notify.py` (next to this file), passing the URL only as
+  `NOTIFY_WEBHOOK_URL` in its environment. It builds the Slack Block Kit JSON
+  with a serializer, so quotes and newlines in the tag message cannot break it,
+  and prints `posted` or `failed: <status> <body>`. `--dry-run` prints the
+  payload without posting. On failure, report it in the terminal; the terminal
+  report still stands, and the run is not failed because of it.
+- **Announcement call to action (optional).** When the overlay defines a
+  stage-deployment announcement (a channel and a message template), add it on a
+  successful dev deploy with `--announce-text`, `--announce-channel-name` and
+  `--announce-channel-url`. The alert then ends with the announcement in a code
+  block, ready to copy, and an "Open <channel>" link button. The skill never
+  posts the announcement itself: the user copies it when they start the stage
+  deployment. A webhook can't post to a second channel, and an interactive
+  button would need a backend.
 
-Message shape (Slack `mrkdwn`; links are `<url|text>`):
+Message shape (Slack `mrkdwn`; links are `<url|text>`). The first line names
+the skill that published it, so a reader of the channel can tell which run a
+message came from:
 
 ```text
+*monitor-dev-ci* · <repo short name>
 <:white_check_mark: | :x: | :hourglass:> <app> <deployed to dev | dev deploy failed | waiting on a manual job>
 Tag: `<tag>`  Merge commit: <commit url|<short sha>>
 <New tag page — prefilled|<new-tag link>>   <Pipeline|<pipeline url>>
