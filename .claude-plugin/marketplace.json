@@ -12,6 +12,7 @@
       "source": "./",
       "strict": false,
       "skills": [
+        "./skills/agent-alerts",
         "./skills/confluence-review",
         "./skills/guided-mr-review",
         "./skills/jira-story-estimation",
@@ -19,6 +20,7 @@
         "./skills/monitor-stage-ci",
         "./skills/mr-comment-resolution",
         "./skills/mr-review",
+        "./skills/mr-review-request",
         "./skills/prod-flag-ledger",
         "./skills/rca-report",
         "./skills/scope-audit",

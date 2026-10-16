@@ -250,7 +250,8 @@ webhook, skip this step and say so in one line.
 - Read the URL into a variable from the config/secret helper the overlay names.
   Check its shape (`https://hooks.slack.com/services/...` for Slack), and never
   echo it, log it, or put it in a file, a commit or the transcript.
-- Post with `scripts/notify.py` (next to this file), passing the URL only as
+- Post with `../agent-alerts/scripts/notify.py` (the shared alert script; see
+  the `agent-alerts` skill), passing the URL only as
   `NOTIFY_WEBHOOK_URL` in its environment. It builds the Slack Block Kit JSON
   with a serializer, so quotes and newlines in the tag message cannot break it,
   and prints `posted` or `failed: <status> <body>`. `--dry-run` prints the
@@ -311,3 +312,5 @@ into one skill that takes the environment as a parameter.
   (step 6b) added earlier the same night. It came from a misread request: the
   ask was a review request when an MR opens, which belongs in its own skill, not
   in a skill that runs at merge.
+- **16 October 2026 (night, last)** — the alert script moved to the shared
+  `agent-alerts` skill (`../agent-alerts/scripts/notify.py`).

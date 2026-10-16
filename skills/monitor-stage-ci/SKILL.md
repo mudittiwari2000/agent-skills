@@ -1,6 +1,6 @@
 ---
 name: monitor-stage-ci
-description: After a release tag is cut (or a merge whose stage deploy is a manual gate), follow the change to STAGE — find the pipeline that deploys it, hand the user the exact manual job to click when stage is gated, watch the stage deploy jobs to a terminal state, confirm what is actually live (running version, or the deployed config read back from the live store), and scan the change's config dependencies for stage deploys nobody played. Runs post-deploy stage QA by default through a QA runner, moves the story to testing once stage is verified (QA never blocks the move), and offers a testing request for the QA testers, sent to the channel the user picks in the terminal or by replying to the stage alert. Use when the user says a tag is created / "monitor the stage pipeline" / "tell me when it's on stage" / "test it on stage", or invokes /monitor-stage-ci with a tag, MR IID or merge commit. Never plays, retries or cancels jobs without an explicit ask, and never touches prod.
+description: After a release tag is cut (or a merge whose stage deploy is a manual gate), follow the change to STAGE — find the pipeline that deploys it, hand the user the exact manual job to click when stage is gated, watch the stage deploy jobs to a terminal state, confirm what is actually live (running version, or the deployed config read back from the live store), and scan the change's config dependencies for stage deploys nobody played. Runs post-deploy stage QA by default through a QA runner, moves the story to testing once stage is verified (QA never blocks the move), and prepares a testing request for the QA testers as an unsent Slack draft (through agent-alerts) for the user to edit and send. Use when the user says a tag is created / "monitor the stage pipeline" / "tell me when it's on stage" / "test it on stage", or invokes /monitor-stage-ci with a tag, MR IID or merge commit. Never plays, retries or cancels jobs without an explicit ask, and never touches prod.
 version: 0.1.0
 argument-hint: <tag | MR IID | merge SHA> [--jira <ISSUE-KEY>] [--qa[=manual]] [--no-move]
 metadata:
@@ -286,30 +286,28 @@ which one failed, and let the user decide. `--no-move` skips the move. After
 the move, give the user the Jira key and the link
 (`https://<your-tracker>/browse/<key>`) with the new status.
 
-## 7b. Offer the testing request
+## 7b. Prepare the testing request
 
 Once the story is in the QA stage (or would have been, with `--no-move`), the
-QA testers need to hear that it is ready. Unless `--no-request` was given,
-propose a message and let the user approve, edit or decline it, following
-[`references/alert-thread-replies.md`](references/alert-thread-replies.md):
-the reply grammar, name resolution, one grant and one message per channel, no
-partial or repeat sends, and the thread watch.
+QA testers need to hear that it is ready. Unless `--no-request` was given, hand
+it over through the `agent-alerts` skill (`../agent-alerts/SKILL.md`): it
+creates a **draft** in the QA channel, posts the alert with an "Open channel,
+draft ready" button, and the user edits and sends it themselves. Nothing is
+sent for them.
 
-What this skill proposes:
+What this skill gives `agent-alerts`:
 
-- **Message:** the overlay's template. Without one: a channel-wide mention,
+- **Text:** the overlay's template. Without one: a channel-wide mention,
   "<key> is on stage (<release unit>) and ready for testing", one or two
   one-line bullets on what to check (taken from the ACs), any unverified or
   failing AC from step 6 as its own line, and the `cc:` line.
-- **Channels:** the overlay's QA channel for the story's team.
-- **cc:** the story's QA owner (from the overlay or the tracker), with the
-  reason "QA owner". People the user names replace this default; the user keeps
-  the QA owner by naming them too.
-- **No hold:** the release is already on stage, so `send` sends straight away.
-
-Ask in the terminal too (several channels can be picked, plus "don't send"),
-and act on whichever answer comes first. Put the proposal in the step 8 alert
-in the shape the reference gives.
+- **Channel:** the overlay's QA channel for the story's team.
+- **People:** the story's QA owner (from the overlay or the tracker), with the
+  reason "QA owner".
+- **Identifier:** the story key, so the sent message can be recognised.
+- **Follow-up on send:** none beyond reporting where it went and who was
+  tagged. If the story is not yet in the QA stage (`--no-move`), say so in the
+  report.
 
 ## 8. Notify (when a notify webhook is configured)
 
@@ -321,19 +319,15 @@ on a manual job, a dependency gap found (step 5), QA finished (pass, follow-up
 or fail), or stopped because the requirements changed (step 5b). Without a
 configured webhook, skip this step and say so in one line.
 
-Handle the URL and the post exactly as `monitor-dev-ci` step 6 does: read it
+Handle the URL and the post as the `agent-alerts` skill describes: read it
 into a variable from the overlay's config/secret helper, check its shape, never
 print or store it, build the JSON with a serializer, and check for `200` / `ok`.
 A failed post is reported in the terminal and never fails the run.
 
-When step 7b drafted a testing request, add it to the alert as the
-announcement call to action (`notify.py --announce-text` with the draft,
-`--announce-channel-name` and `--announce-channel-url` for the channel the
-overlay suggests first): plain `mrkdwn` plus an "Open <channel>" button, as
-`monitor-dev-ci` does for its stage announcement. The webhook only reaches the
-alerts channel, so the user copies the text from there. Mentions in the draft
-must stay plain text (`@here`, not `<!here>`) so the alerts channel is not
-pinged.
+When step 7b prepared a testing request, the stage alert carries it in the
+shape `agent-alerts` gives (people with reasons as plain text, an "Open
+<channel>, draft ready" button, the text to copy). Post with
+`../agent-alerts/scripts/notify.py`.
 
 When QA runs after the move, send a second alert when it finishes, with its
 verdict and evidence link.
@@ -349,7 +343,7 @@ Live check: <version match | KVS entries N, diffs M | job result only>
 <Dependency gaps: <job link> … | none>
 <Story: <key> → <QA stage> | not moved: <reason>>
 <QA: <verdict> — <one line> · <QA evidence|<tracker comment url>> | QA running | QA skipped (--no-qa)>
-<Testing request: the proposal block from references/alert-thread-replies.md | sent to <names> | not sent>
+<Testing request: draft ready in <channel> | sent to <channel>, tagged <names> | not sent>
 <Next: <the one thing the user should do now>>
 ```
 
@@ -359,9 +353,8 @@ Live check: <version match | KVS entries N, diffs M | job result only>
 
 - Never play, retry, cancel or re-run a job without an explicit ask, and then
   only the named job.
-- Follow the guardrails in `references/alert-thread-replies.md` for the
-  testing request: only the user's own choice of channel, one grant per
-  channel, no partial or repeat sends, no live mentions in the alert.
+- Never send the testing request yourself; `agent-alerts` drafts it and the
+  user sends it.
 - Never let a failing QA result go unmentioned because the story moved anyway:
   it leads the Jira comment, the alert and the testing request.
 - Never touch prod jobs, even when they sit in the same pipeline.
@@ -399,3 +392,7 @@ Live check: <version match | KVS entries N, diffs M | job result only>
   now shows a full proposal (channels, cc with reasons, text). Replies can edit
   it (`+@x`, `-@y`, `+#ch`, `-#ch`) before `send`, as well as replace it
   outright or `skip` it.
+- **16 October 2026 (night, last)** — the testing request is now prepared as a
+  Slack draft through the new `agent-alerts` skill; the user sends it. That
+  replaces the send-on-reply flow and `references/alert-thread-replies.md`,
+  which are removed.

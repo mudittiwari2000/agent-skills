@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Post a monitor-dev-ci (or monitor-stage-ci) run report to a Slack incoming webhook.
+"""Post an agent alert (a monitor-dev-ci, monitor-stage-ci or mr-review-request report) to a Slack incoming webhook.
 
 The webhook URL is read from the NOTIFY_WEBHOOK_URL environment variable and is
 never printed. Everything else comes from arguments, so the message shape lives
