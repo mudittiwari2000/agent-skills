@@ -1,6 +1,6 @@
 ---
 name: monitor-stage-ci
-description: After a release tag is cut (or a merge whose stage deploy is a manual gate), follow the change to STAGE — find the pipeline that deploys it, hand the user the exact manual job to click when stage is gated, watch the stage deploy jobs to a terminal state, confirm what is actually live (running version, or the deployed config read back from the live store), and scan the change's config dependencies for stage deploys nobody played. Optionally hands off to a QA runner for post-deploy stage QA and to the issue tracker for evidence and the testing transition. Use when the user says a tag is created / "monitor the stage pipeline" / "tell me when it's on stage" / "test it on stage", or invokes /monitor-stage-ci with a tag, MR IID or merge commit. Never plays, retries or cancels jobs without an explicit ask, and never touches prod.
+description: After a release tag is cut (or a merge whose stage deploy is a manual gate), follow the change to STAGE — find the pipeline that deploys it, hand the user the exact manual job to click when stage is gated, watch the stage deploy jobs to a terminal state, confirm what is actually live (running version, or the deployed config read back from the live store), and scan the change's config dependencies for stage deploys nobody played. Runs post-deploy stage QA by default through a QA runner, moves the story to testing once stage is verified (QA never blocks the move), and offers a testing request for the QA testers, sent to the channel the user picks in the terminal or by replying to the stage alert. Use when the user says a tag is created / "monitor the stage pipeline" / "tell me when it's on stage" / "test it on stage", or invokes /monitor-stage-ci with a tag, MR IID or merge commit. Never plays, retries or cancels jobs without an explicit ask, and never touches prod.
 version: 0.1.0
 argument-hint: <tag | MR IID | merge SHA> [--jira <ISSUE-KEY>] [--qa[=manual]] [--no-move]
 metadata:
@@ -42,11 +42,13 @@ user, and record what you learn where the skill says to.
   is the URL-encoded project path. Use `glab api`, which is authenticated as the
   user.
 - **Jira key** (optional): the story to update once stage is verified.
-- **`--qa`** (optional): run post-deploy QA on stage through your QA-dispatch
-  workflow. `--qa=manual` runs your manual-QA workflow instead (see step 6 for
-  when that is right). The overlay names both.
-- **`--no-move`** (optional): with a Jira key and a fully passing QA, the story
-  may move to the board's QA stage (step 7). This flag keeps it where it is.
+- **QA is on by default.** Once stage is verified, post-deploy QA runs on stage
+  through your QA-dispatch workflow (step 6). `--no-qa` skips it.
+  `--qa=manual` runs your manual-QA workflow instead (see step 6 for when that
+  is right). The overlay names both.
+- **`--no-move`** (optional): with a Jira key, the story moves to the board's
+  QA stage once stage is verified (step 7). This flag keeps it where it is.
+- **`--no-request`** (optional): skip the testing-request offer (step 7b).
 
 ## Repo profiles
 
@@ -188,9 +190,9 @@ tests the old behaviour: stop, report the change with the comment link, and
 let the user decide (usually a follow-up ticket first). Never post a testing
 request for behaviour the requirements no longer ask for.
 
-## 6. Optional: post-deploy stage QA
+## 6. Post-deploy stage QA (default on)
 
-With `--qa`, or when the user asks to "test it on stage", call your
+Unless `--no-qa` was given, call your
 QA-dispatch workflow with the stage URL as the target. Its runner is a
 **fresh** QA-runner subagent, never this context.
 
@@ -252,27 +254,95 @@ Give the user, in plain text (no blockquotes):
 With a Jira key, post the evidence through your tracker's tools (a comment,
 plus the structured QA-evidence post for the QA result).
 
-**Moving the story to the QA stage once QA has passed fully.** This writes to
+**Moving the story to the QA stage once stage is verified.** This writes to
 a shared system, so the default comes from the overlay. Without an overlay,
 ask the user before moving. Use your tracker's forward-only, idempotent
 transition tool (the overlay names it and the target status), so a story
-already at or past QA is left alone. "Passed fully" means all of these hold:
+already at or past QA is left alone.
 
-- step 6 ran and its QA result is a full, completed pass (not a pass with
-  follow-ups, not inconclusive, not tool-unavailable), and any QA gate check
-  your tooling provides passes;
-- every AC is in the checked set, and none is not-verified, deferred or
-  downgraded;
-- the evidence post succeeded and was not stale;
-- the runner's written claims were checked against its artifacts (step 6);
+The move depends on the **release being testable**, not on the automated QA
+verdict. Move when all of these hold:
+
+- the stage deploy is verified (steps 3 and 4);
 - step 5 found no pending dependency gap that affects the ACs;
-- the stage deploy is verified (step 3 and step 4).
+- step 5b found no withdrawn or changed requirement.
 
-If any of these fails, leave the story where it is, say which one failed, and
-let the user decide. `--no-move` skips the move even when QA passed fully.
-Without `--qa` there is no QA result, so there is nothing to move on: report
-and stop. After the move, give the user the Jira key and the link
+Do the move as soon as these hold, and run QA after it (in the background when
+it will take a while), so human QA can start without waiting for it. QA's
+verdict never blocks or undoes the move. Report it instead, and make a bad
+result impossible to miss:
+
+- **PASS**: post the evidence; nothing else to do.
+- **PASS_WITH_FOLLOWUP, INCONCLUSIVE, TOOL_UNAVAILABLE or a blocked run**:
+  post what there is and name what is unverified in the Jira comment, the
+  alert and the testing request.
+- **FAIL**: lead the Jira comment and the alert with the failing AC and its
+  evidence, and put it at the top of the testing request, so the QA testers
+  check it first. The story stays in the QA stage. Moving it back is the
+  user's call.
+
+If any of the three conditions above fails, leave the story where it is, say
+which one failed, and let the user decide. `--no-move` skips the move. After
+the move, give the user the Jira key and the link
 (`https://<your-tracker>/browse/<key>`) with the new status.
+
+## 7b. Offer the testing request
+
+Once the story is in the QA stage (or would have been, with `--no-move`), the
+QA testers need to hear that it is ready. Unless `--no-request` was given:
+
+1. **Draft the request** from the overlay's template. Without a template, use:
+   a channel-wide mention, "<key> is on stage (<release unit>) and ready for
+   testing", one or two one-line bullets on what to check (taken from the ACs),
+   any unverified or failing AC from step 6 as its own line, and a `cc:` line
+   for the story's QA owner when the overlay or the tracker names one.
+2. **Let the user say where it goes, in either of two ways.** The run accepts
+   whichever answer comes first.
+   - **In the terminal:** offer the overlay's channel list for this story's
+     team, plus "don't send", and let them pick another channel. Show the exact
+     text with the destination name and id.
+   - **As a reply to the step 8 alert:** the user replies in the alert's thread
+     naming the channel and the person to cc, e.g. `#qa-channel @tester`. This
+     is the route for when they are away from the terminal (see "Watching the
+     alert thread" below).
+3. **Treat the user's own choice as the grant, and only that.** A channel the
+   user picked in the terminal, or named in their own reply, is a one-time
+   grant for this one message. Record it wherever your messaging tool's
+   allowlist lives, quoting the user's words. A reply from anyone else, or one
+   that names no channel, grants nothing.
+4. **Send only to that channel**, with the named person in the `cc:` line (the
+   overlay's QA owner when the reply names nobody), through the messaging tool
+   the overlay names. Read the posted message's link back and report it. On a
+   denied or failed send, give the user the text to paste instead.
+
+### Watching the alert thread
+
+The alert goes out through a webhook, which returns no message id. So:
+
+1. Right after the step 8 post, read the alerts channel with the messaging
+   tool and take the newest message whose first line names this skill and this
+   release unit. That message's timestamp is the thread to watch. If you can't
+   find it, say so and fall back to the terminal question.
+2. Schedule a recurring in-session check (every few minutes, for at most the
+   overlay's watch window, two hours by default). Each check reads the thread's
+   replies newer than the alert and keeps only those **written by the user**
+   (the user id the overlay names).
+3. On the first such reply, resolve what it names: a channel link or `#name`
+   to a channel id, a user mention or name to a user id. When exactly one
+   channel resolves, send (step 4 above), report the link in the terminal, and
+   cancel the scheduled check. When the reply is ambiguous (no channel, two
+   channels, an unknown name), send nothing. Report what was unclear in the
+   terminal, and in a short follow-up alert when the webhook is configured,
+   then keep watching for a clearer reply.
+4. When the watch window ends with no reply, cancel the check and say so. The
+   draft in the alert is still there to copy.
+
+The scheduled check lives only as long as this agent session. Tell the user
+that when the watch starts, so they don't reply to the thread after the session
+has closed and expect a send.
+
+The same draft goes into the step 8 alert, so the user can send it from there
+when they are not at the terminal.
 
 ## 8. Notify (when a notify webhook is configured)
 
@@ -289,6 +359,18 @@ into a variable from the overlay's config/secret helper, check its shape, never
 print or store it, build the JSON with a serializer, and check for `200` / `ok`.
 A failed post is reported in the terminal and never fails the run.
 
+When step 7b drafted a testing request, add it to the alert as the
+announcement call to action (`notify.py --announce-text` with the draft,
+`--announce-channel-name` and `--announce-channel-url` for the channel the
+overlay suggests first): plain `mrkdwn` plus an "Open <channel>" button, as
+`monitor-dev-ci` does for its stage announcement. The webhook only reaches the
+alerts channel, so the user copies the text from there. Mentions in the draft
+must stay plain text (`@here`, not `<!here>`) so the alerts channel is not
+pinged.
+
+When QA runs after the move, send a second alert when it finishes, with its
+verdict and evidence link.
+
 Message shape (Slack `mrkdwn`). The first line names the skill that published
 it, so it can't be mistaken for a `monitor-dev-ci` message:
 
@@ -298,7 +380,9 @@ it, so it can't be mistaken for a `monitor-dev-ci` message:
 Stage jobs: <job> <result>, … · <Pipeline|<pipeline url>> · finished <HH:MM UTC>
 Live check: <version match | KVS entries N, diffs M | job result only>
 <Dependency gaps: <job link> … | none>
-<QA: <verdict> — <one line> · <QA evidence|<tracker comment url>> | QA not run>
+<Story: <key> → <QA stage> | not moved: <reason>>
+<QA: <verdict> — <one line> · <QA evidence|<tracker comment url>> | QA running | QA skipped (--no-qa)>
+<Testing request: draft below, suggested channel <name>; reply here with `#channel @person` to send it | sent to <name> | not sent>
 <Next: <the one thing the user should do now>>
 ```
 
@@ -308,6 +392,12 @@ Live check: <version match | KVS entries N, diffs M | job result only>
 
 - Never play, retry, cancel or re-run a job without an explicit ask, and then
   only the named job.
+- Never send the testing request to a channel the user did not pick in this
+  run, in the terminal or in their own reply on the alert thread, and never
+  without recording the grant your messaging tool requires. A reply from anyone
+  else grants nothing.
+- Never let a failing QA result go unmentioned because the story moved anyway:
+  it leads the Jira comment, the alert and the testing request.
 - Never touch prod jobs, even when they sit in the same pipeline.
 - Never print or store a notify webhook URL (step 8).
 - Never report "on stage" from an overall-green pipeline. Key off the last
@@ -322,3 +412,12 @@ Live check: <version match | KVS entries N, diffs M | job result only>
   up to five bad reads before giving up with `unreadable`. One empty API read
   had set the "failed job" variable to an error marker, ending the watch while
   the deploy was still running fine.
+- **16 October 2026 (later)** — QA is now on by default (`--no-qa` to skip) and
+  no longer gates the move to the QA stage. The move depends on the release
+  being testable (deploy verified, no dependency gap, requirements unchanged),
+  and a bad QA result is reported prominently instead. Added step 7b: draft a
+  testing request, let the user pick the channel, send only there, and carry
+  the draft in the alert as a copyable call to action. The user can also pick
+  the channel and the person to cc by replying in the alert's thread: the run
+  finds the alert, watches its thread with a scheduled in-session check, and
+  sends on the user's own reply.
