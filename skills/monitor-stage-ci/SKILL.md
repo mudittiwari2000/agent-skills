@@ -100,16 +100,31 @@ Run one background watcher that exits on **every** terminal state, so a
 failure can't look like "still waiting":
 
 ```bash
+# GitLab job JSON can carry raw control characters, and a single read can come
+# back empty or truncated. Parse leniently, skip a bad read, and give up only
+# after five in a row, so one hiccup can't end the watch or pose as a failure.
+read_jobs() { glab api "projects/$P/pipelines/$ID/jobs?per_page=100" 2>/dev/null | python3 -c 'import sys,json
+try: d=json.loads(sys.stdin.read(),strict=False)
+except Exception: sys.exit(3)
+last=next((x.get("status","") for x in d if x.get("name")==sys.argv[1]),"")
+bad=next((x["name"] for x in d if "stage" in x.get("name","") and x.get("status") in ("failed","canceled")),"")
+print(f"{last}|{bad}")' "$LAST_STAGE_JOB"; }
+miss=0; last=""; bad=""
 for i in $(seq 1 720); do
-  J=$(glab api "projects/$P/pipelines/$ID/jobs?per_page=100")
-  last=$(echo "$J" | jq -r --arg j "$LAST_STAGE_JOB" '.[]|select(.name==$j)|.status')
-  bad=$(echo "$J" | jq -r '.[]|select((.name|test("stage")) and (.status=="failed" or .status=="canceled"))|.name' | head -1)
+  out=$(read_jobs)
+  if [ -z "$out" ]; then miss=$((miss+1)); [ $miss -ge 5 ] && { last=unreadable; break; }; sleep 30; continue; fi
+  miss=0; last=${out%%|*}; bad=${out#*|}
   [ -n "$bad" ] && break
-  case "$last" in success|skipped) break;; esac
+  case "$last" in success|skipped|manual) break;; esac
   sleep 30
 done
-echo "last=$last failed=$bad"; echo "$J" | jq -r '.[]|select(.name|test("stage"))|"\(.status)\t\(.name)\t\(.finished_at)"'
+echo "last=$last failed=$bad"
 ```
+
+`unreadable` means five reads in a row failed (API, auth or parse error).
+Report it and check by hand; it is neither "still running" nor a failed
+deploy. Re-list the jobs once the watcher exits rather than reusing its last
+read.
 
 Key off the **last job in the profile's stage chain**, not "deploy looks
 green". For example, a parameter-update job can run after the deploy job. On
@@ -300,3 +315,10 @@ Live check: <version match | KVS entries N, diffs M | job result only>
 - Never print secrets from your config/secret store or put them in artifacts.
 - Never mark an AC as passed when the stage environment it ran on was missing
   one of the change's dependencies (step 5).
+
+## Revision notes
+
+- **16 October 2026** — the step 3 watcher now parses leniently and tolerates
+  up to five bad reads before giving up with `unreadable`. One empty API read
+  had set the "failed job" variable to an error marker, ending the watch while
+  the deploy was still running fine.

@@ -81,6 +81,12 @@ the number is already taken, say so before the merge lands — the user will wan
 to re-bump (both `package.json` and `package-lock.json`, from `origin/$BRANCH`'s
 version + 1, skipping any number another open MR already claims).
 
+**Check what else the tag will carry.** List the merges on `$BRANCH` between the
+previous release tag and this merge commit that touched the app
+(`git log --merges --oneline <prev tag>..$MERGE_SHA -- apps/<app>`). A merge that
+changed the app without bumping its version ships under *this* tag, so its
+user-facing change belongs in the tag message too. Name it in the report.
+
 ## 2. Find the default-branch pipeline for that commit
 
 ```bash
@@ -161,15 +167,18 @@ itself, not the branch:
 ```bash
 git fetch -q origin $BRANCH
 # monorepo
-git show $MERGE_SHA:apps/<app>/package.json | jq -r .version
-git show $MERGE_SHA:package-lock.json | jq -r '.packages["apps/<app>"].version'   # must match
+git show "${MERGE_SHA}:apps/<app>/package.json" | jq -r .version
+git show "${MERGE_SHA}:package-lock.json" | jq -r '.packages["apps/<app>"].version'   # must match
 # single-app repo
-git show $MERGE_SHA:package.json | jq -r .version
-git show $MERGE_SHA:package-lock.json | jq -r .version                           # must match
+git show "${MERGE_SHA}:package.json" | jq -r .version
+git show "${MERGE_SHA}:package-lock.json" | jq -r .version                           # must match
 
 git ls-remote --tags origin "$TAG"                              # must print nothing — never reuse a tag
 git ls-remote --tags --sort=-v:refname origin "$TAG_PREFIX*" | head -3
 ```
+
+Write `"${MERGE_SHA}:<path>"` with braces and quotes. In zsh, `$MERGE_SHA:apps/…`
+reads `:a` as a path modifier (make absolute) and git gets a nonsense revision.
 
 Check tags on the **remote** with `git ls-remote`, not `git tag -l`. A local
 `git fetch --tags` in a large monorepo can exit non-zero on unrelated tags that "would
@@ -291,3 +300,10 @@ into one skill that takes the environment as a parameter.
   the tag already exists.
 - Never print or store a notify webhook URL; it is a secret even though it can
   only post to one channel.
+
+## Revision notes
+
+- **16 October 2026** — quoted and braced `"${MERGE_SHA}:<path>"` in the version
+  reads (zsh's `:a` modifier broke the unbraced form), and added the check for
+  merges that land under this tag without their own version bump. One such
+  merge had to be found by hand and added to the tag message.

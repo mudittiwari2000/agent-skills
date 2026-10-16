@@ -154,6 +154,11 @@ commands, from where the repo runs them:
   ignore pattern"). That is "lint does not apply", not "lint clean" — say so.
 - Never pipe a gate into `tail`/`grep` and read the pipeline's exit code; capture
   the real one (redirect to a file, then check `$?`).
+- Pass the file list so the shell actually splits it. In zsh an unquoted `$FILES`
+  is **one** argument, so `prettier --write $FILES` and `eslint $FILES` report
+  "No files matching the pattern" and check nothing, and a quick glance can miss
+  that. List the files explicitly (or use an array), and confirm the gate's output
+  names your files before you count it as passed.
 - When a type check shows errors, `git blame` them: are they on lines you wrote?
 - Run the secret scan and any pre-push rule the repo documents.
 - **Compare the commit's diff stat with what you staged** (`git show --stat HEAD`
@@ -301,3 +306,8 @@ A review round changes facts other people read. After the push:
   resets, so warn the user and use a merge, not a force-push.
 - **12 October 2026 (evening)** — added the staged-versus-committed diff check after a
   formatting hook widened an import-only commit from +14/−14 to +131/−93 before push.
+- **16 October 2026** — added the shell word-splitting check to the gates: a zsh
+  `$FILES` variable made prettier and eslint run on nothing during a review-fix
+  round. Also confirmed in use: a reviewer's "merge the two identical builders"
+  suggestion belongs in **Fix** when this MR created the duplication, even though
+  the reviewer offered a follow-up.
