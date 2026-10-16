@@ -10,6 +10,8 @@ that reads `<dir>/<name>/SKILL.md`.
 
 ## Skills
 
+Take the [interactive skills tour](docs/tour/index.html) for what each skill does, how they chain across a change, how generic each is today, and the roadmap. It is generated from the skills by `scripts/build-tour.py`.
+
 | Skill | What it does |
 |---|---|
 | [mr-review](skills/mr-review) | Reviews a GitLab MR against the whole codebase in an isolated worktree: traces callers, runs the repo's own checks, checks the MR's tests catch the bug, emits a severity-ranked report. Posts to GitLab or Jira only when asked. |
@@ -22,6 +24,8 @@ that reads `<dir>/<name>/SKILL.md`.
 | [monitor-stage-ci](skills/monitor-stage-ci) | Follows a tag to stage, names the manual gate to click, proves what is live and scans for config deploys nobody played. |
 | [rca-report](skills/rca-report) | Investigates an incident to its root cause (reproduce, isolate, trace, date) and writes the RCA, with a two-phase non-prod-then-prod access gate. |
 | [prod-flag-ledger](skills/prod-flag-ledger) | Ledger of every feature flag a story adds; from release notes, works out which flags must go on in prod for that release. |
+| [mr-review-request](skills/mr-review-request) | When an MR opens, picks reviewers from related work (with a reason each) and drafts the review request in the team channel for you to edit and send; then sets exactly the tagged reviewers on the MR. |
+| [agent-alerts](skills/agent-alerts) | One private channel where long-running skills report back; messages that tag other people become drafts you send yourself. Shared by the CI and review-request skills. |
 | [test-skill-branch](skills/test-skill-branch) | Points a local skills/plugin checkout at an unmerged skill branch (or back at main) while keeping it synced. |
 
 ## Setup

@@ -1,0 +1,314 @@
+<title>Agent Skills Tour</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Source+Sans+3:wght@400;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: a delivery pipeline. Five stage lanes across the top act as the filter;
+   skills sit under their stage; a detail panel opens beside the grid (below on phones). */
+:root {
+  --bg: #f4f6f7;
+  --surface: #ffffff;
+  --ink: #17212b;
+  --muted: #5b6874;
+  --line: #d8dfe4;
+  --accent: #0f6e78;        /* pipeline teal */
+  --accent-soft: #e1f0f1;
+  --ready: #2f7d4f;  --ready-bg: #e3f2e8;
+  --partial: #9a6a12; --partial-bg: #f7eedb;
+  --org: #8a3b3b;    --org-bg: #f6e4e4;
+  --plan: #6b5aa6; --build: #2f6fb3; --review: #0f6e78; --ship: #b0611d; --operate: #8a3b56;
+  --display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #11171c; --surface: #19222a; --ink: #e6ecf0; --muted: #9aa8b3; --line: #2b3640;
+  --accent: #4fb6c0; --accent-soft: #173238;
+  --ready: #7cc796; --ready-bg: #1b3326; --partial: #e1b660; --partial-bg: #382c14; --org: #e39a9a; --org-bg: #3a2222;
+  --plan: #a99ae0; --build: #7fb0e6; --review: #4fb6c0; --ship: #e6a066; --operate: #d98aa6;
+  color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #11171c; --surface: #19222a; --ink: #e6ecf0; --muted: #9aa8b3; --line: #2b3640;
+  --accent: #4fb6c0; --accent-soft: #173238;
+  --ready: #7cc796; --ready-bg: #1b3326; --partial: #e1b660; --partial-bg: #382c14; --org: #e39a9a; --org-bg: #3a2222;
+  --plan: #a99ae0; --build: #7fb0e6; --review: #4fb6c0; --ship: #e6a066; --operate: #d98aa6;
+  color-scheme: dark; }
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 16px/1.55 var(--body); }
+.wrap { max-width: 1180px; margin: 0 auto; padding-block: 28px 64px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+h1, h2, h3 { font-family: var(--display); text-wrap: balance; margin: 0; line-height: 1.15; }
+h1 { font-size: clamp(1.9rem, 4vw, 2.6rem); font-weight: 700; }
+h2 { font-size: 1.35rem; font-weight: 700; }
+h3 { font-size: 1.05rem; font-weight: 700; }
+p { margin: 0; }
+a { color: var(--accent); }
+code, .mono { font-family: var(--mono); font-size: .86em; }
+.lede { color: var(--muted); max-width: 64ch; margin-top: 10px; }
+.meta-row { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: 14px; color: var(--muted); font-size: .9rem; }
+nav.tabs { display: flex; gap: 4px; margin: 26px 0 18px; border-bottom: 1px solid var(--line); overflow-x: auto; }
+nav.tabs button { background: none; border: 0; border-bottom: 2px solid transparent; padding: 10px 14px; font: 600 .95rem var(--body); color: var(--muted); cursor: pointer; white-space: nowrap; }
+nav.tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+button:focus-visible, a:focus-visible, input:focus-visible, .card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.lanes { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; margin-bottom: 14px; }
+.lane { border: 1px solid var(--line); background: var(--surface); border-radius: 6px; padding: 8px 10px; text-align: left; cursor: pointer; font: inherit; color: inherit; position: relative; }
+.lane::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; border-radius: 6px 0 0 6px; background: var(--c); }
+.lane b { display: block; font-family: var(--display); font-size: .98rem; }
+.lane span { color: var(--muted); font-size: .8rem; }
+.lane[aria-pressed="true"] { border-color: var(--c); box-shadow: inset 0 0 0 1px var(--c); }
+.toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 16px; }
+.toolbar input { flex: 1 1 240px; min-width: 0; padding: 9px 12px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--ink); font: inherit; }
+.chip { border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 999px; padding: 5px 11px; font: 600 .82rem var(--body); cursor: pointer; }
+.chip[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); }
+.layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 420px); gap: 18px; align-items: start; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 14px; cursor: pointer; display: flex; flex-direction: column; gap: 8px; text-align: left; font: inherit; color: inherit; }
+.card[aria-current="true"] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.card .top { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+.card .name { font-family: var(--mono); font-weight: 600; font-size: .92rem; overflow-wrap: anywhere; }
+.stage-dot { font-size: .74rem; letter-spacing: .04em; text-transform: uppercase; color: var(--c); font-weight: 600; white-space: nowrap; }
+.card .pitch { color: var(--muted); font-size: .93rem; }
+.pill { display: inline-block; border-radius: 4px; padding: 1px 7px; font-size: .75rem; font-weight: 600; }
+.pill.ready { color: var(--ready); background: var(--ready-bg); }
+.pill.partial { color: var(--partial); background: var(--partial-bg); }
+.pill.org { color: var(--org); background: var(--org-bg); }
+.needs { display: flex; flex-wrap: wrap; gap: 4px; }
+.needs span { font-size: .74rem; border: 1px solid var(--line); border-radius: 4px; padding: 0 6px; color: var(--muted); }
+aside.detail { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 12px); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 18px; display: flex; flex-direction: column; gap: 14px; max-height: calc(100vh - 24px); overflow: auto; }
+.detail .label { font-size: .74rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 600; margin-bottom: 4px; }
+.prompt { display: flex; gap: 8px; align-items: flex-start; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 9px 10px; }
+.prompt code { flex: 1; min-width: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.copy { border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 4px; font: 600 .78rem var(--body); padding: 3px 8px; cursor: pointer; }
+.chain { display: flex; flex-wrap: wrap; gap: 6px; }
+.chain button { font-family: var(--mono); font-size: .8rem; border: 1px solid var(--line); background: var(--bg); color: var(--ink); border-radius: 4px; padding: 2px 8px; cursor: pointer; }
+.muted { color: var(--muted); }
+.flow { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 16px; overflow-x: auto; }
+.flowsteps { display: grid; gap: 10px; margin-top: 14px; }
+.flowstep { display: grid; grid-template-columns: 26px minmax(0,1fr); gap: 10px; align-items: start; }
+.flowstep .n { font: 600 .82rem var(--mono); color: var(--accent); padding-top: 2px; }
+.road { display: grid; gap: 14px; }
+.phase { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 16px; }
+.phase header { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 12px; align-items: baseline; margin-bottom: 10px; }
+.phase .when { font: 600 .82rem var(--mono); color: var(--muted); }
+.task { display: grid; grid-template-columns: 22px minmax(0,1fr); gap: 8px; padding: 6px 0; border-top: 1px solid var(--line); }
+.task:first-of-type { border-top: 0; }
+.task .box { width: 14px; height: 14px; border: 1.5px solid var(--muted); border-radius: 3px; margin-top: 4px; }
+.task.done .box { background: var(--ready); border-color: var(--ready); }
+.task.done .t { color: var(--muted); text-decoration: line-through; }
+.task .why { color: var(--muted); font-size: .88rem; }
+.ideas { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+.idea { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 14px; display: grid; gap: 6px; }
+.steps { counter-reset: s; display: grid; gap: 12px; max-width: 760px; }
+.step { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 14px; display: grid; gap: 8px; }
+.empty { color: var(--muted); padding: 24px; border: 1px dashed var(--line); border-radius: 8px; text-align: center; }
+footer { margin-top: 40px; color: var(--muted); font-size: .85rem; }
+@media (max-width: 860px) {
+  .layout { grid-template-columns: minmax(0, 1fr); }
+  aside.detail { position: static; max-height: none; }
+  .lanes { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (prefers-reduced-motion: no-preference) { .card, .lane, .chip { transition: border-color .15s, box-shadow .15s; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Agent Skills Tour</h1>
+    <p class="lede" id="lede"></p>
+    <div class="meta-row" id="meta"></div>
+  </header>
+
+  <nav class="tabs" role="tablist" aria-label="Sections">
+    <button role="tab" id="tab-skills" aria-controls="panel-skills" aria-selected="true">Skills</button>
+    <button role="tab" id="tab-flow" aria-controls="panel-flow" aria-selected="false">How they chain</button>
+    <button role="tab" id="tab-roadmap" aria-controls="panel-roadmap" aria-selected="false">Roadmap</button>
+    <button role="tab" id="tab-ideas" aria-controls="panel-ideas" aria-selected="false">Next skills</button>
+    <button role="tab" id="tab-start" aria-controls="panel-start" aria-selected="false">Get started</button>
+  </nav>
+
+  <section id="panel-skills" role="tabpanel" aria-labelledby="tab-skills">
+    <div class="lanes" id="lanes"></div>
+    <div class="toolbar">
+      <input id="q" type="search" placeholder="Search skills, tools or tasks (e.g. GitHub, review, Jira)" aria-label="Search skills">
+      <div id="readiness" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+    </div>
+    <div class="layout">
+      <div>
+        <div class="grid" id="grid"></div>
+        <p class="empty" id="empty" hidden>No skill matches. Clear the search or pick another stage.</p>
+      </div>
+      <aside class="detail" id="detail" aria-live="polite"></aside>
+    </div>
+  </section>
+
+  <section id="panel-flow" role="tabpanel" aria-labelledby="tab-flow" hidden>
+    <div class="flow" id="flow"></div>
+  </section>
+
+  <section id="panel-roadmap" role="tabpanel" aria-labelledby="tab-roadmap" hidden>
+    <p class="lede" id="road-lede" style="margin:0 0 16px"></p>
+    <div class="road" id="road"></div>
+  </section>
+
+  <section id="panel-ideas" role="tabpanel" aria-labelledby="tab-ideas" hidden>
+    <p class="lede" style="margin:0 0 16px">Skills that would fit this repo's style (grounded, evidence-first engineering workflows) and widen who can use it.</p>
+    <div class="ideas" id="ideas"></div>
+  </section>
+
+  <section id="panel-start" role="tabpanel" aria-labelledby="tab-start" hidden>
+    <div class="steps" id="start"></div>
+  </section>
+
+  <footer id="foot"></footer>
+</div>
+
+<script>
+const DATA = {"asOf":"2026-10-16","repo":"https://github.com/mudittiwari2000/agent-skills","intro":"Grounded engineering-workflow skills for AI coding agents. Each one checks claims against the real code, pipeline or ticket before it reports, and leaves the judgement calls (and anything sent to other people) to you. Pick a stage to see the skills for that part of delivery, or search for a tool or task.","harnesses":["Claude Code","Codex","any harness that reads SKILL.md"],"readiness":{"ready":{"label":"Generic","hint":"Works for anyone with git and the named tool; no private overlay needed."},"partial":{"label":"GitLab + Jira today","hint":"The method is generic, but forge, tracker or chat calls are wired to GitLab, Jira or Slack. Generalising is on the roadmap."},"org":{"label":"Fits one setup","hint":"Written around one team's CI and release process; needs a rework before others can use it."}},"stages":[{"id":"plan","label":"Plan","blurb":"Specs and estimates"},{"id":"build","label":"Build","blurb":"Scope and skill dev"},{"id":"review","label":"Review","blurb":"MRs and comments"},{"id":"ship","label":"Ship","blurb":"Deploys and flags"},{"id":"operate","label":"Operate","blurb":"Incidents and alerts"}],"flow":{"title":"One change, end to end","intro":"How the skills hand off across a typical change. Each arrow is a point where the next skill picks up what the last one produced.","mermaid":"flowchart LR\n  A[jira-story-estimation] --> B[scope-audit]\n  B --> C[MR opened]\n  C --> D[mr-review-request]\n  D --> E[mr-review / guided-mr-review]\n  E --> F[mr-comment-resolution]\n  F --> G[merge]\n  G --> H[monitor-dev-ci]\n  H --> I[release tag]\n  I --> J[monitor-stage-ci]\n  J --> K[prod-flag-ledger]\n  K --> L[prod]\n  L -. incident .-> M[rca-report]\n  D -. drafts via .-> N[agent-alerts]\n  J -. drafts via .-> N","steps":["Estimate the story from its acceptance criteria and the real code (jira-story-estimation). Review the spec first if there is one (confluence-review).","Before opening the MR, check that every hunk is needed (scope-audit).","When the MR opens, get a review request drafted with reviewers from related work, and send it yourself (mr-review-request, through agent-alerts).","Reviewers use mr-review for a full review, or guided-mr-review to do it themselves.","Answer every finding with a verdict and a fix, a ticket or a reason (mr-comment-resolution).","After the merge, follow it to dev and get the release tag (monitor-dev-ci), then to stage with the testing request prepared (monitor-stage-ci).","On release day, find the flags that must go on in prod (prod-flag-ledger). If something breaks, investigate it to a root cause (rca-report)."]},"roadmap":{"intro":"Goal: make every skill useful to an engineer on any stack, then get it in front of people. One step a day; ticks are updated as each lands.","phases":[{"title":"Day 0: tour and inventory","when":"16 Oct 2026","goal":"Know where each skill stands, and make that visible.","tasks":[{"title":"Interactive skills tour, generated from the repo","why":"One page that explains every skill; rebuilt by scripts/build-tour.py.","done":true},{"title":"Pre-commit check that fails when the tour is stale","why":"The tour can't silently drift from the skills.","done":true},{"title":"Genericity audit of all 13 skills and a distribution scan","why":"Feeds the readiness badges and this roadmap.","done":true},{"title":"README skills table lists every skill","why":"agent-alerts and mr-review-request were missing.","done":true}]},{"title":"Day 1: first impressions","when":"17 Oct 2026","goal":"Someone landing on the repo can install it in their harness in under a minute.","tasks":[{"title":"Per-harness install blocks in the README","why":"Claude Code plugin, npx skills add, Codex, Gemini CLI, Copilot, glab skills install."},{"title":"Update the GitHub description and topics","why":"Today it says Codex-only; add claude-code, agent-skills, gitlab, code-review."},{"title":"Pass claude plugin validate --strict","why":"Required for the Anthropic directory."},{"title":"Stop doctor.sh failing for normal users","why":"Make Jira optional in mr-review's manifest; check the contributor hook only in contributor mode."}]},{"title":"Days 2–3: setup that asks what you have","when":"18–19 Oct 2026","goal":"Setup adapts to the user's stack instead of assuming one.","tasks":[{"title":"Capability manifest for every skill","why":"Declares the forge, CI, tracker, chat, docs and CLI tools each one requires or can use."},{"title":"Interactive setup.sh","why":"Asks for forge and host, CI, tracker, docs, chat, cloud access and flag provider, writes a non-secret config, checks gh/glab auth."},{"title":"doctor.sh reports readiness per skill","why":"Ready, partly ready (and what's skipped), or not available."},{"title":"Degrade rules in every skill","why":"No tracker: spec file. No chat: terminal with paste-ready text. Always say what was skipped."}]},{"title":"Days 4–8: GitHub support","when":"20–24 Oct 2026","goal":"The review skills work on GitHub PRs as well as GitLab MRs.","tasks":[{"title":"lib/forge.py: one forge layer for GitLab and GitHub, picked from the remote","why":"Unlocks seven skills; the biggest single lever."},{"title":"mr-review and guided-mr-review on GitHub","why":"gh pr view, refs/pull/N/head, review comments with a commit SHA."},{"title":"mr-comment-resolution on GitHub","why":"Including resolving review threads through GraphQL."},{"title":"mr-review-request on GitHub, with CODEOWNERS as a reviewer signal","why":"gh pr edit --add-reviewer, gh pr ready."}]},{"title":"Days 9–10: trackers, docs and output","when":"25–26 Oct 2026","goal":"Jira, Confluence and Slack become one option each, not requirements.","tasks":[{"title":"Tracker adapter: Jira, Linear, GitHub Issues or none","why":"Rename jira-story-estimation to story-estimation."},{"title":"confluence-review becomes doc-review","why":"Confluence, Notion, Google Docs, Markdown in the repo."},{"title":"Terminal-first output with optional publishers","why":"rca-report defaults to Markdown when no document tool exists."},{"title":"agent-alerts notifier adapters","why":"Slack, Discord, Teams, ntfy, email or terminal-only."}]},{"title":"Days 11–13: one deploy monitor","when":"27–29 Oct 2026","goal":"Deploy monitoring that fits any CI and versioning scheme.","tasks":[{"title":"Merge monitor-dev-ci and monitor-stage-ci into monitor-deploy --env","why":"They already share their layout."},{"title":"CI adapter: GitLab CI and GitHub Actions","why":"gh run list --commit, gh run watch."},{"title":"Version-source adapter","why":"package.json, pyproject, Cargo, VERSION file, or tags only."},{"title":"Pluggable live checks; move one team's specifics to the overlay","why":"HTTP version endpoint, k8s image tag, parameter store."}]},{"title":"Day 14: launch","when":"30 Oct 2026","goal":"Put it in front of people with something they can try.","tasks":[{"title":"Clean the public text","why":"Internal workflow names out; revision diaries move to a CHANGELOG."},{"title":"examples/ with real sample outputs","why":"An MR review report, an RCA, a scope audit."},{"title":"Submit to the Anthropic plugin directory","why":"claude.ai/directory/manage (needs a paid plan)."},{"title":"Post in r/ClaudeCode and the r/ClaudeAI showcase thread","why":"Lead with the GitLab + Jira angle, where few skills exist."},{"title":"Publish the tour on GitHub Pages","why":"docs/tour/index.html is already a standalone page."}]},{"title":"Weeks 3–4: momentum","when":"From 31 Oct 2026","goal":"Keep the repo active and give people a reason to come back.","tasks":[{"title":"Submit to awesome-claude-code","why":"Its form needs 14+ days of active commits."},{"title":"First new generic skill: ci-failure-triage","why":"Every team sifts red pipelines."},{"title":"An eval for mr-review (with vs without the skill)","why":"Evidence for a Show HN post."},{"title":"One new or generalised skill a week","why":"From the Next skills tab."}]}]},"ideas":[{"name":"ci-failure-triage","stage":"ship","why":"Fetch the failing job's log, re-run at the target branch as a baseline, and classify the failure as infra, code or flaky.","works":"GitLab CI, GitHub Actions"},{"name":"flaky-test-triage","stage":"build","why":"Loop the test, find what it depends on (order, time, network) and propose a quarantine plus a fix.","works":"any test runner"},{"name":"regression-bisect","stage":"operate","why":"Drive git bisect run from a reproducing script, so \"it used to work\" becomes a commit.","works":"git"},{"name":"dependency-upgrade","stage":"build","why":"Read the changelog's breaking changes, check every call site, run the suites against a baseline.","works":"npm, pip, cargo, go"},{"name":"release-notes-from-git","stage":"ship","why":"Turn a tag range into user-facing notes from merged MRs and PRs, with git as the source of truth.","works":"GitLab, GitHub"},{"name":"migration-safety-review","stage":"review","why":"Check database migrations for locks, backfills, rollback and old code against the new schema.","works":"SQL migrations, ORMs"},{"name":"feature-flag-cleanup","stage":"ship","why":"Find stale flags in code and in the ledger, then draft the removal change. Pairs with prod-flag-ledger.","works":"any flag provider"},{"name":"pr-description-audit","stage":"review","why":"Write or check an MR description against the diff and its real call sites.","works":"GitLab, GitHub"},{"name":"repo-onboarding-tour","stage":"plan","why":"A grounded tour of a repo for a newcomer: entry points, how to run the checks, the traps.","works":"any repo"}],"start":[{"title":"Install as a Claude Code plugin","text":"Adds the repo as a plugin marketplace and installs every skill. Run both lines inside Claude Code.","cmd":"/plugin marketplace add mudittiwari2000/agent-skills\n/plugin install agent-skills@mudit-agent-skills"},{"title":"Or clone and link into every harness","text":"Links the skills into Claude Code, Codex and any other harness it detects. Run with --dry-run first to preview.","cmd":"git clone https://github.com/mudittiwari2000/agent-skills.git ~/dev/repos/agent-skills\nbash ~/dev/repos/agent-skills/install.sh"},{"title":"Check what works on your machine","text":"Reports what's set up and names the command that fixes anything that isn't.","cmd":"bash ~/dev/repos/agent-skills/doctor.sh --offline"},{"title":"Try one","text":"Start with a generic skill: a scope audit on any branch with a spec, or a review of a GitLab MR.","cmd":"Run a scope audit of this branch against SPEC.md"}],"skills":[{"name":"agent-alerts","description":"Shared plumbing for skills that report to the user through one private \"agent desk\" channel. Posts an alert there through an incoming webhook (scripts/notify.py). For any message that tags other people (an MR review request, a testing request), it never sends: it creates a ready Slack draft in the target channel, with the suggested people and the reasons, so the user edits and sends it themselves. It watches the alert's thread for the user's replies, notices when the user has sent the draft, and hands the final channel and people back to the calling skill. Load it from monitor-dev-ci, monitor-stage-ci, mr-review-request, or any skill that tells the user something and lets them decide what goes to a team channel.","stage":"operate","pitch":"One private channel where long-running skills report back. Messages that tag other people become drafts you send yourself, never sends.","when":"Used by the CI and review-request skills; load it from any skill that needs to tell you something while you're away.","example":"Post a test alert to my agent desk","needs":["Slack webhook","Slack connector (drafts)"],"generic":"partial","genericNote":"notify.py works with any Slack webhook. Discord, Teams, ntfy and terminal-only fallbacks are planned.","feeds":["mr-review-request","monitor-stage-ci"]},{"name":"confluence-review","description":"Review a Confluence document (PRD, design doc, runbook, ADR, spec) for completeness, correctness, ambiguity, staleness, and structure, and emit a severity-ranked report. Use when the user shares an atlassian.net/wiki URL or Confluence page ID, names a page to review (\"review the X design doc\"), or asks to check a Confluence spec before refinement or implementation. Doc-only by default; optionally grounds claims against Jira issues and local repos under ~/dev/repos when explicitly asked. Local report by default; posts a comment back to the Confluence page only when explicitly requested and only after verifying the page version is still current.","stage":"plan","pitch":"A severity-ranked review of a PRD, design doc, runbook or ADR: completeness, correctness, ambiguity, staleness.","when":"Before refinement or implementation starts on a spec, or when a doc may have gone stale.","example":"Review this design doc before we start: https://<site>.atlassian.net/wiki/spaces/ENG/pages/123","needs":["Confluence","Jira (optional)"],"generic":"ready","genericNote":"Works for any Confluence Cloud user. Notion, Google Docs and Markdown sources are planned (as doc-review).","feeds":["jira-story-estimation"]},{"name":"guided-mr-review","description":"Guide the user through reviewing a GitLab merge request themselves, instead of reviewing it for them. Produces a one-screen Review Brief listing what has already been verified (so they can skip it) and the 2–5 places that need human judgement, ranked by risk. Each place gets the question to answer, where to look and what each answer means for approval. With --walk, goes through those places one at a time, records the user's verdicts and drafts their review comments in their voice. Use when the user wants to review an MR themselves and asks where to look: \"guide me through this MR\", \"what should I look at in !123\", \"walk me through this review\", \"help me review this MR\", \"what do I need to check before approving !123\", or /guided-mr-review with an MR URL, IID or branch. Not for having the agent review the MR and report findings (use mr-review), nor for documents (use confluence-review). Reuses mr-review's fetch and verification. Never approves, posts or comments unless the user explicitly asks.","stage":"review","pitch":"Prepares you to review an MR yourself: what's already verified, and the 2 to 5 places that need your judgement, ranked by risk.","when":"You want to do the review yourself but know where to look first. --walk takes you through each place and drafts your comments.","example":"Guide me through reviewing !123 --walk","needs":["GitLab (glab)","git"],"generic":"partial","genericNote":"Builds on mr-review, so it gains GitHub support with it.","after":["mr-review-request"],"feeds":["mr-comment-resolution"]},{"name":"jira-story-estimation","description":"Estimate or re-estimate JIRA stories so the number reflects the ticket's own acceptance criteria and the real codebase — not a design mockup, not the ticket's own claims about what already exists. Use when asked to estimate, size, story-point or re-estimate one or more JIRA tickets, when a design or prototype has landed and estimates need revisiting, when a backlog's points are suspected of being wrong, or when fanning estimation out across subagents. Covers scope discipline, verification against the real repos and measured data, the adversarial second pass, and writing the number back with an audit trail.","stage":"plan","pitch":"Story points from the ticket's own acceptance criteria and the real code, not from a mockup or the ticket's claims.","when":"You need to estimate or re-estimate stories, a design has landed and points need revisiting, or a backlog's numbers look wrong.","example":"Estimate PROJ-123 and PROJ-124 against the codebase, with an adversarial second pass","needs":["Jira","git"],"generic":"partial","genericNote":"The method works anywhere; reading tickets and writing the number back assume Jira. A tracker-neutral rename (story-estimation) is planned.","feeds":["scope-audit"]},{"name":"monitor-dev-ci","description":"After a GitLab MR merges (or is set to auto-merge), watch the default-branch pipeline for its merge commit (a monorepo, a single-app service, or any repo with a dev deploy job) until the app is deployed to dev, then hand back the release tag name (from the bumped app version), the merge commit id, the annotation text, and a prefilled GitLab new-tag link (tag name + merge commit filled in) for creating the tag manually. Use when the user says an MR is merged / on auto-merge and asks to \"monitor the dev pipeline\", \"tell me when it's on dev\", \"give me the tag\", or invokes /monitor-dev-ci with an MR IID or commit. Read-only: never creates the tag, never retries or re-runs jobs without asking.","stage":"ship","pitch":"Watches the default-branch pipeline after a merge until the app is on dev, then hands back the release tag, the commit and a prefilled new-tag link.","when":"An MR has merged or is on auto-merge and you want to know when it's on dev.","example":"/monitor-dev-ci !123","needs":["GitLab CI","npm versioning","Slack webhook (optional)"],"generic":"org","genericNote":"Assumes GitLab CI with npm version bumps. A combined monitor-deploy with GitHub Actions and other version sources is planned.","after":["mr-comment-resolution"],"feeds":["monitor-stage-ci"]},{"name":"monitor-stage-ci","description":"After a release tag is cut (or a merge whose stage deploy is a manual gate), follow the change to STAGE — find the pipeline that deploys it, hand the user the exact manual job to click when stage is gated, watch the stage deploy jobs to a terminal state, confirm what is actually live (running version, or the deployed config read back from the live store), and scan the change's config dependencies for stage deploys nobody played. Runs post-deploy stage QA by default through a QA runner, moves the story to testing once stage is verified (QA never blocks the move), and prepares a testing request for the QA testers as an unsent Slack draft (through agent-alerts) for the user to edit and send. Use when the user says a tag is created / \"monitor the stage pipeline\" / \"tell me when it's on stage\" / \"test it on stage\", or invokes /monitor-stage-ci with a tag, MR IID or merge commit. Never plays, retries or cancels jobs without an explicit ask, and never touches prod.","stage":"ship","pitch":"Follows a release tag to stage, names the manual gate to click, proves what is live, scans for config deploys nobody played, and prepares the testing request.","when":"You've cut a release tag and want to know when it's on stage and ready for QA.","example":"/monitor-stage-ci my-app-v1.2.3","needs":["GitLab CI","AWS (live checks)","Jira","Slack"],"generic":"org","genericNote":"Written around one team's stage setup. Planned: pluggable live checks (HTTP version endpoint, k8s image, parameter store) and optional QA and tracker steps.","after":["monitor-dev-ci"],"feeds":["prod-flag-ledger"]},{"name":"mr-comment-resolution","description":"Resolve review comments left on the user's OWN GitLab merge request — analyse each finding against the real code, fix what belongs in this MR, raise Jira tickets for what genuinely does not, and post a structured reply that a reviewer can check. Use when the user says a comment/review has landed on their MR, asks to \"address the review\", \"fix the comments\", \"resolve the comments\", \"reply to <reviewer>\", or shares an MR whose notes need answering. The sibling `mr-review` skill is the opposite job (reviewing someone else's MR) — do not confuse them.","stage":"review","pitch":"Works through review comments on your own MR: verifies each finding, fixes what belongs, tickets what doesn't, replies with a table the reviewer can check.","when":"A review has landed on your MR and you want every finding answered honestly.","example":"Address the review comments on !123","needs":["GitLab (glab)","a tracker for follow-ups"],"generic":"partial","genericNote":"The verdict method is generic; replies and thread resolution use GitLab, follow-up tickets assume Jira.","after":["mr-review","guided-mr-review"],"feeds":["monitor-dev-ci"]},{"name":"mr-review","description":"Ground and review a GitLab merge request across the whole codebase, not just the diff. Use when the user shares a gitlab.com merge-request URL or IID (e.g. \"review this MR\", \"review !123\", pastes a /-/merge_requests/ link), names a branch to review, or asks to review the current working-tree changes, for any repo under ~/dev/repos, including agent tooling repositories (skills, scripts, MCP servers, and plugins). Fetches the MR into an isolated worktree, traces every changed symbol through its real callers/tests/config, checks correctness, regressions, security, error handling, tests, and repo conventions, verifies claims by running the repo's own checks when feasible, and emits a severity-ranked report. Local report by default; optionally posts it to GitLab or to the JIRA ticket identified from the source branch or MR title, but only when explicitly asked and only after verifying that the reviewed commit is still current. When the user wants to review the MR themselves and asks where to look, use guided-mr-review instead.","stage":"review","pitch":"Reviews an MR against the whole codebase in an isolated worktree: traces callers, runs the repo's own checks, checks the tests catch the bug.","when":"Someone asks you to review an MR, or you want a second opinion on your own before sending it.","example":"Review https://gitlab.com/group/project/-/merge_requests/123","needs":["GitLab (glab)","git","Jira (optional)"],"generic":"partial","genericNote":"Works for any GitLab repo today, self-hosted included. GitHub PRs are the top roadmap item.","after":["mr-review-request"],"feeds":["mr-comment-resolution"]},{"name":"mr-review-request","description":"After a GitLab MR is opened (by hand, or at the end of a delivery workflow such as ship-it, interactive-ship or quick-ship), prepare its review request without sending anything. Picks reviewers from related work (who authored or reviewed MRs on the same ticket and files) with a reason each, drafts the request in the team's review channel as an unsent Slack draft, and posts an alert to the user's agent desk with an \"Open channel, draft ready\" button. The user edits the reviewers or the channel in Slack and sends it themselves. When the sent message is detected, it sets the MR's GitLab reviewers to exactly the people tagged, adds a reviewer-reasons note to the MR and marks the MR ready. Use when an MR has just been created, or when the user says \"request a review\", \"send the review request\", \"post this MR for review\", or invokes /mr-review-request with an MR IID or URL. Never posts the request itself.","stage":"review","pitch":"Prepares the review request when an MR opens: reviewers from related work with a reason each, drafted in the team channel for you to edit and send.","when":"An MR has just been opened (a hook can start it), or you say \"request a review\".","example":"/mr-review-request !123","needs":["GitLab","Slack connector","agent-alerts"],"generic":"partial","genericNote":"Reviewer selection is generic; the draft, the channel and the reviewer update assume GitLab and Slack. GitHub (gh pr edit, CODEOWNERS) is planned.","after":["scope-audit"],"feeds":["mr-review","guided-mr-review"]},{"name":"prod-flag-ledger","description":"Keep a ledger of every feature flag added in delivery work and which environments it is on, then, when the user shares release notes (a Confluence release-notes page, the generator's markdown, a tag or tag range, or pasted text) on a release date, work out which flags must be turned ON in production for that release and which are still waiting. Use whenever a story adds, renames or removes a feature flag (Split.io or any other provider), when the user says a flag was switched on/off in an environment, when they send release notes or say \"we're releasing X today\", or ask \"which flags do I still need to turn on in prod?\". Records and reports only; never toggles a flag.","stage":"ship","pitch":"Keeps a ledger of every feature flag a story adds, then works out from the release notes which flags must go on in prod.","when":"A story adds or removes a flag, a flag changes in an environment, or you're shipping a release and ask \"which flags do I turn on?\".","example":"We're releasing my-app-v1.2.3 today: which flags need turning on in prod?","needs":["a local JSON ledger","GitLab (optional)"],"generic":"ready","genericNote":"Provider-agnostic ledger; read-only adapters for LaunchDarkly, Unleash and OpenFeature are planned.","after":["monitor-stage-ci"]},{"name":"rca-report","description":"Investigate a production incident or user-reported bug to its root cause and write it up as an RCA (root cause analysis) document. Use when the user asks for an \"RCA\", \"root cause\", \"post-mortem\", \"why is X broken / empty / 404ing\", shares screenshots of a broken page and wants it explained, or asks to check an issue across dev / stage / prod. Covers a two-phase access gate (non-prod first, then prod; prod access is required before an RCA is written), a reproduce-isolate-trace-date protocol, evidence standards, the traps that waste time or produce a wrong cause, and the RCA document shape. The output goes to a Claude Docs artifact by default; a Confluence page (location and title proposed and confirmed with the user first) or a Markdown file on request. Organisation specifics (environment gates, data sources, config helper, Confluence conventions) come from an optional overlay.","stage":"operate","pitch":"Investigates an incident to its root cause (reproduce, isolate, trace, date) and writes the RCA, gated on non-prod first, then prod access.","when":"Something is broken in production, a user reported a bug you can't explain, or someone asks for a post-mortem.","example":"Write an RCA for why the pricing page shows no plans since this morning","needs":["AWS","Jira","Confluence or Markdown"],"generic":"partial","genericNote":"The investigation method is generic; the access gate assumes AWS and the default output is a Claude Docs page. Markdown-first output and other clouds are planned."},{"name":"scope-audit","description":"Unbiased scope check of a feature branch or MR before review. Spawns a FRESH background agent that sees only the story's acceptance criteria/rules, the user's explicit requests and the diff, never the implementer's reasoning, and classifies every changed hunk as required, supporting, not required or dead under current config. It also lists ACs the diff doesn't cover. Use as a sub-step whenever a feature is being developed (inside your delivery workflow or by hand): before opening or un-drafting an MR, after applying review/QA fixes, or when the user asks \"is everything in this MR needed / in scope?\". Read-only; reports, never edits.","stage":"build","pitch":"A fresh agent that sees only the acceptance criteria, your explicit asks and the diff, and classifies every hunk as required, supporting, not required or dead.","when":"Before opening or un-drafting an MR, after applying review fixes, or when you wonder whether everything in a branch is needed.","example":"Run a scope audit of this branch against the story's acceptance criteria","needs":["git","a spec or ticket"],"generic":"ready","genericNote":"Needs only git and the requirements text. The fresh-agent step uses Claude Code's subagents; other harnesses can start a new session instead.","after":["jira-story-estimation"],"feeds":["mr-review-request"]},{"name":"test-skill-branch","description":"Point the local checkout of a skills/plugin repo (the one your agent launcher loads skills from) at an unmerged skill branch (or back at main) while keeping it synced to main. Use when the user says /test-skill-branch, \"switch the plugin to <skill or branch>\", \"point the plugin at main\", \"which skill branch is the plugin on\", or asks to add a skill branch to the list, or to sync/refresh one or all skill branches against main. Takes a skill key from branches.tsv, a raw branch name, `main`, `status`, `sync`, `sync-all`, or `add <key> <branch>`.","stage":"build","pitch":"Points your local skills checkout at an unmerged skill branch, or back at main, while keeping it synced.","when":"You're developing or testing a skill on a branch before it merges.","example":"/test-skill-branch my-skill-branch","needs":["git"],"generic":"ready","genericNote":"Any skills or plugin repo."}],"generated":"2026-10-16"};
+const $ = (s) => document.querySelector(s);
+const el = (tag, attrs = {}, ...kids) => {
+  const n = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === "class") n.className = v; else if (k === "style") n.style.cssText = v;
+    else if (k.startsWith("on")) n.addEventListener(k.slice(2), v); else n.setAttribute(k, v);
+  }
+  for (const kid of kids.flat()) if (kid != null) n.append(kid.nodeType ? kid : document.createTextNode(kid));
+  return n;
+};
+const stageById = Object.fromEntries(DATA.stages.map((s) => [s.id, s]));
+const skillByName = Object.fromEntries(DATA.skills.map((s) => [s.name, s]));
+const READINESS = DATA.readiness;
+const store = { get(k) { try { return localStorage.getItem(k); } catch { return null; } },
+                set(k, v) { try { localStorage.setItem(k, v); } catch {} } };
+const state = { stage: null, ready: null, q: "", current: store.get("tour.skill") || DATA.skills[0].name };
+
+function copyButton(text) {
+  const b = el("button", { class: "copy", type: "button" }, "Copy");
+  b.addEventListener("click", async () => {
+    try { await navigator.clipboard.writeText(text); b.textContent = "Copied"; }
+    catch { const r = document.createRange(); r.selectNodeContents(b.previousSibling); const s = getSelection(); s.removeAllRanges(); s.addRange(r); b.textContent = "Selected"; }
+    setTimeout(() => (b.textContent = "Copy"), 1600);
+  });
+  return b;
+}
+const pill = (r) => el("span", { class: `pill ${r}` }, READINESS[r].label);
+
+function header() {
+  $("#lede").textContent = DATA.intro;
+  const counts = Object.keys(READINESS).map((r) => `${DATA.skills.filter((s) => s.generic === r).length} ${READINESS[r].label.toLowerCase()}`);
+  $("#meta").append(
+    el("span", {}, `${DATA.skills.length} skills`), el("span", {}, counts.join(" · ")),
+    el("span", {}, "Works in ", DATA.harnesses.join(", ")),
+    el("a", { href: DATA.repo, target: "_blank", rel: "noopener" }, "Repository"));
+  $("#foot").textContent = `Generated from the repo's SKILL.md files and docs/tour/tour.json, as of ${DATA.generated}. Edit those, not this page.`;
+}
+
+function lanes() {
+  const box = $("#lanes");
+  for (const s of DATA.stages) {
+    const n = DATA.skills.filter((k) => k.stage === s.id).length;
+    const b = el("button", { class: "lane", type: "button", style: `--c: var(--${s.id})`, "aria-pressed": "false" },
+      el("b", {}, s.label), el("span", {}, `${s.blurb} · ${n}`));
+    b.addEventListener("click", () => { state.stage = state.stage === s.id ? null : s.id; render(); });
+    box.append(b);
+  }
+  const rbox = $("#readiness");
+  for (const [id, r] of Object.entries(READINESS)) {
+    const c = el("button", { class: "chip", type: "button", "aria-pressed": "false", title: r.hint }, r.label);
+    c.addEventListener("click", () => { state.ready = state.ready === id ? null : id; render(); });
+    c.dataset.id = id; rbox.append(c);
+  }
+  $("#q").addEventListener("input", (e) => { state.q = e.target.value.trim().toLowerCase(); render(); });
+}
+
+function matches(s) {
+  if (state.stage && s.stage !== state.stage) return false;
+  if (state.ready && s.generic !== state.ready) return false;
+  if (!state.q) return true;
+  const hay = [s.name, s.pitch, s.description, s.when, (s.needs || []).join(" "), s.example].join(" ").toLowerCase();
+  return state.q.split(/\s+/).every((w) => hay.includes(w));
+}
+
+function render() {
+  document.querySelectorAll(".lane").forEach((b, i) => b.setAttribute("aria-pressed", String(DATA.stages[i].id === state.stage)));
+  document.querySelectorAll("#readiness .chip").forEach((c) => c.setAttribute("aria-pressed", String(c.dataset.id === state.ready)));
+  const grid = $("#grid"); grid.replaceChildren();
+  const shown = DATA.skills.filter(matches);
+  $("#empty").hidden = shown.length > 0;
+  for (const s of shown) {
+    const st = stageById[s.stage];
+    const card = el("button", { class: "card", type: "button", "aria-current": String(s.name === state.current) },
+      el("div", { class: "top" }, el("span", { class: "name" }, s.name), el("span", { class: "stage-dot", style: `--c: var(--${s.stage})` }, st.label)),
+      el("p", { class: "pitch" }, s.pitch),
+      el("div", { class: "needs" }, pill(s.generic), (s.needs || []).map((n) => el("span", {}, n))));
+    card.addEventListener("click", () => select(s.name));
+    grid.append(card);
+  }
+  detail();
+}
+
+function select(name) { state.current = name; store.set("tour.skill", name); render(); if (matchMedia("(max-width: 860px)").matches) $("#detail").scrollIntoView({ behavior: "smooth", block: "start" }); }
+
+function detail() {
+  const s = skillByName[state.current] || DATA.skills[0];
+  const st = stageById[s.stage];
+  const box = $("#detail"); box.replaceChildren();
+  const chainRow = (label, names) => names && names.length ? el("div", {}, el("div", { class: "label" }, label),
+    el("div", { class: "chain" }, names.map((n) => skillByName[n]
+      ? el("button", { type: "button", onclick: () => select(n) }, n)
+      : el("span", { class: "muted mono" }, n)))) : null;
+  box.append(
+    el("div", {}, el("div", { class: "label", style: `color: var(--${s.stage})` }, st.label), el("h2", { class: "mono", style: "font-family:var(--mono);font-size:1.1rem" }, s.name)),
+    el("p", {}, s.pitch),
+    el("div", {}, el("div", { class: "label" }, "Use it when"), el("p", {}, s.when)),
+    el("div", {}, el("div", { class: "label" }, "Try"), el("div", { class: "prompt" }, el("code", {}, s.example), copyButton(s.example))),
+    el("div", {}, el("div", { class: "label" }, "Needs"), el("div", { class: "needs" }, (s.needs || []).map((n) => el("span", {}, n)))),
+    el("div", {}, el("div", { class: "label" }, "How generic today"), el("p", {}, pill(s.generic), " ", s.genericNote || READINESS[s.generic].hint)),
+    chainRow("Comes before", s.feeds), chainRow("Comes after", s.after),
+    el("details", {}, el("summary", { class: "muted" }, "Full description (from SKILL.md)"), el("p", { class: "muted", style: "margin-top:8px;font-size:.92rem" }, s.description)),
+    el("p", { class: "muted", style: "font-size:.85rem" }, el("a", { href: `${DATA.repo}/tree/main/skills/${s.name}`, target: "_blank", rel: "noopener" }, "Open in repo")));
+}
+
+function flow() {
+  const box = $("#flow");
+  box.append(el("h2", {}, DATA.flow.title), el("p", { class: "lede" }, DATA.flow.intro),
+    el("pre", { class: "mermaid" }, DATA.flow.mermaid),
+    el("div", { class: "flowsteps" }, DATA.flow.steps.map((t, i) => el("div", { class: "flowstep" }, el("span", { class: "n" }, String(i + 1).padStart(2, "0")), el("p", {}, t)))));
+}
+
+function roadmap() {
+  $("#road-lede").textContent = DATA.roadmap.intro;
+  const box = $("#road");
+  for (const ph of DATA.roadmap.phases) {
+    const done = ph.tasks.filter((t) => t.done).length;
+    box.append(el("article", { class: "phase" },
+      el("header", {}, el("h3", {}, ph.title), el("span", { class: "when" }, `${ph.when} · ${done}/${ph.tasks.length} done`)),
+      ph.goal ? el("p", { class: "muted", style: "margin-bottom:8px" }, ph.goal) : null,
+      ph.tasks.map((t) => el("div", { class: `task${t.done ? " done" : ""}` }, el("span", { class: "box", "aria-hidden": "true" }),
+        el("div", {}, el("div", { class: "t" }, t.title), t.why ? el("div", { class: "why" }, t.why) : null)))));
+  }
+}
+
+function ideas() {
+  const box = $("#ideas");
+  for (const i of DATA.ideas) box.append(el("article", { class: "idea" },
+    el("div", { class: "top", style: "display:flex;justify-content:space-between;gap:8px" }, el("h3", { class: "mono", style: "font-family:var(--mono);font-size:.95rem" }, i.name), el("span", { class: "stage-dot", style: `--c: var(--${i.stage})` }, stageById[i.stage].label)),
+    el("p", {}, i.why), i.works ? el("p", { class: "muted", style: "font-size:.88rem" }, "Works with: ", i.works) : null));
+}
+
+function start() {
+  const box = $("#start");
+  for (const s of DATA.start) box.append(el("article", { class: "step" }, el("h3", {}, s.title), el("p", { class: "muted" }, s.text),
+    s.cmd ? el("div", { class: "prompt" }, el("code", {}, s.cmd), copyButton(s.cmd)) : null));
+}
+
+function tabs() {
+  const all = [...document.querySelectorAll('[role="tab"]')];
+  const show = (tab) => { all.forEach((t) => { const on = t === tab; t.setAttribute("aria-selected", String(on)); $("#" + t.getAttribute("aria-controls")).hidden = !on; }); };
+  all.forEach((t) => t.addEventListener("click", () => { show(t); store.set("tour.tab", t.id); }));
+  const hash = (location.hash || "").slice(1);
+  const want = all.find((t) => t.id === "tab-" + hash) || all.find((t) => t.id === store.get("tour.tab"));
+  if (want) show(want);
+}
+
+header(); lanes(); render(); flow(); roadmap(); ideas(); start(); tabs();
+</script>

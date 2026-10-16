@@ -1,0 +1,314 @@
+<title>Agent Skills Tour</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Source+Sans+3:wght@400;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: a delivery pipeline. Five stage lanes across the top act as the filter;
+   skills sit under their stage; a detail panel opens beside the grid (below on phones). */
+:root {
+  --bg: #f4f6f7;
+  --surface: #ffffff;
+  --ink: #17212b;
+  --muted: #5b6874;
+  --line: #d8dfe4;
+  --accent: #0f6e78;        /* pipeline teal */
+  --accent-soft: #e1f0f1;
+  --ready: #2f7d4f;  --ready-bg: #e3f2e8;
+  --partial: #9a6a12; --partial-bg: #f7eedb;
+  --org: #8a3b3b;    --org-bg: #f6e4e4;
+  --plan: #6b5aa6; --build: #2f6fb3; --review: #0f6e78; --ship: #b0611d; --operate: #8a3b56;
+  --display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #11171c; --surface: #19222a; --ink: #e6ecf0; --muted: #9aa8b3; --line: #2b3640;
+  --accent: #4fb6c0; --accent-soft: #173238;
+  --ready: #7cc796; --ready-bg: #1b3326; --partial: #e1b660; --partial-bg: #382c14; --org: #e39a9a; --org-bg: #3a2222;
+  --plan: #a99ae0; --build: #7fb0e6; --review: #4fb6c0; --ship: #e6a066; --operate: #d98aa6;
+  color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #11171c; --surface: #19222a; --ink: #e6ecf0; --muted: #9aa8b3; --line: #2b3640;
+  --accent: #4fb6c0; --accent-soft: #173238;
+  --ready: #7cc796; --ready-bg: #1b3326; --partial: #e1b660; --partial-bg: #382c14; --org: #e39a9a; --org-bg: #3a2222;
+  --plan: #a99ae0; --build: #7fb0e6; --review: #4fb6c0; --ship: #e6a066; --operate: #d98aa6;
+  color-scheme: dark; }
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 16px/1.55 var(--body); }
+.wrap { max-width: 1180px; margin: 0 auto; padding-block: 28px 64px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+h1, h2, h3 { font-family: var(--display); text-wrap: balance; margin: 0; line-height: 1.15; }
+h1 { font-size: clamp(1.9rem, 4vw, 2.6rem); font-weight: 700; }
+h2 { font-size: 1.35rem; font-weight: 700; }
+h3 { font-size: 1.05rem; font-weight: 700; }
+p { margin: 0; }
+a { color: var(--accent); }
+code, .mono { font-family: var(--mono); font-size: .86em; }
+.lede { color: var(--muted); max-width: 64ch; margin-top: 10px; }
+.meta-row { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: 14px; color: var(--muted); font-size: .9rem; }
+nav.tabs { display: flex; gap: 4px; margin: 26px 0 18px; border-bottom: 1px solid var(--line); overflow-x: auto; }
+nav.tabs button { background: none; border: 0; border-bottom: 2px solid transparent; padding: 10px 14px; font: 600 .95rem var(--body); color: var(--muted); cursor: pointer; white-space: nowrap; }
+nav.tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+button:focus-visible, a:focus-visible, input:focus-visible, .card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.lanes { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; margin-bottom: 14px; }
+.lane { border: 1px solid var(--line); background: var(--surface); border-radius: 6px; padding: 8px 10px; text-align: left; cursor: pointer; font: inherit; color: inherit; position: relative; }
+.lane::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; border-radius: 6px 0 0 6px; background: var(--c); }
+.lane b { display: block; font-family: var(--display); font-size: .98rem; }
+.lane span { color: var(--muted); font-size: .8rem; }
+.lane[aria-pressed="true"] { border-color: var(--c); box-shadow: inset 0 0 0 1px var(--c); }
+.toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 16px; }
+.toolbar input { flex: 1 1 240px; min-width: 0; padding: 9px 12px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--ink); font: inherit; }
+.chip { border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 999px; padding: 5px 11px; font: 600 .82rem var(--body); cursor: pointer; }
+.chip[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); }
+.layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 420px); gap: 18px; align-items: start; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 14px; cursor: pointer; display: flex; flex-direction: column; gap: 8px; text-align: left; font: inherit; color: inherit; }
+.card[aria-current="true"] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.card .top { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+.card .name { font-family: var(--mono); font-weight: 600; font-size: .92rem; overflow-wrap: anywhere; }
+.stage-dot { font-size: .74rem; letter-spacing: .04em; text-transform: uppercase; color: var(--c); font-weight: 600; white-space: nowrap; }
+.card .pitch { color: var(--muted); font-size: .93rem; }
+.pill { display: inline-block; border-radius: 4px; padding: 1px 7px; font-size: .75rem; font-weight: 600; }
+.pill.ready { color: var(--ready); background: var(--ready-bg); }
+.pill.partial { color: var(--partial); background: var(--partial-bg); }
+.pill.org { color: var(--org); background: var(--org-bg); }
+.needs { display: flex; flex-wrap: wrap; gap: 4px; }
+.needs span { font-size: .74rem; border: 1px solid var(--line); border-radius: 4px; padding: 0 6px; color: var(--muted); }
+aside.detail { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 12px); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 18px; display: flex; flex-direction: column; gap: 14px; max-height: calc(100vh - 24px); overflow: auto; }
+.detail .label { font-size: .74rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 600; margin-bottom: 4px; }
+.prompt { display: flex; gap: 8px; align-items: flex-start; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 9px 10px; }
+.prompt code { flex: 1; min-width: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.copy { border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 4px; font: 600 .78rem var(--body); padding: 3px 8px; cursor: pointer; }
+.chain { display: flex; flex-wrap: wrap; gap: 6px; }
+.chain button { font-family: var(--mono); font-size: .8rem; border: 1px solid var(--line); background: var(--bg); color: var(--ink); border-radius: 4px; padding: 2px 8px; cursor: pointer; }
+.muted { color: var(--muted); }
+.flow { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 16px; overflow-x: auto; }
+.flowsteps { display: grid; gap: 10px; margin-top: 14px; }
+.flowstep { display: grid; grid-template-columns: 26px minmax(0,1fr); gap: 10px; align-items: start; }
+.flowstep .n { font: 600 .82rem var(--mono); color: var(--accent); padding-top: 2px; }
+.road { display: grid; gap: 14px; }
+.phase { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 16px; }
+.phase header { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 12px; align-items: baseline; margin-bottom: 10px; }
+.phase .when { font: 600 .82rem var(--mono); color: var(--muted); }
+.task { display: grid; grid-template-columns: 22px minmax(0,1fr); gap: 8px; padding: 6px 0; border-top: 1px solid var(--line); }
+.task:first-of-type { border-top: 0; }
+.task .box { width: 14px; height: 14px; border: 1.5px solid var(--muted); border-radius: 3px; margin-top: 4px; }
+.task.done .box { background: var(--ready); border-color: var(--ready); }
+.task.done .t { color: var(--muted); text-decoration: line-through; }
+.task .why { color: var(--muted); font-size: .88rem; }
+.ideas { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+.idea { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 14px; display: grid; gap: 6px; }
+.steps { counter-reset: s; display: grid; gap: 12px; max-width: 760px; }
+.step { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 14px; display: grid; gap: 8px; }
+.empty { color: var(--muted); padding: 24px; border: 1px dashed var(--line); border-radius: 8px; text-align: center; }
+footer { margin-top: 40px; color: var(--muted); font-size: .85rem; }
+@media (max-width: 860px) {
+  .layout { grid-template-columns: minmax(0, 1fr); }
+  aside.detail { position: static; max-height: none; }
+  .lanes { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (prefers-reduced-motion: no-preference) { .card, .lane, .chip { transition: border-color .15s, box-shadow .15s; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Agent Skills Tour</h1>
+    <p class="lede" id="lede"></p>
+    <div class="meta-row" id="meta"></div>
+  </header>
+
+  <nav class="tabs" role="tablist" aria-label="Sections">
+    <button role="tab" id="tab-skills" aria-controls="panel-skills" aria-selected="true">Skills</button>
+    <button role="tab" id="tab-flow" aria-controls="panel-flow" aria-selected="false">How they chain</button>
+    <button role="tab" id="tab-roadmap" aria-controls="panel-roadmap" aria-selected="false">Roadmap</button>
+    <button role="tab" id="tab-ideas" aria-controls="panel-ideas" aria-selected="false">Next skills</button>
+    <button role="tab" id="tab-start" aria-controls="panel-start" aria-selected="false">Get started</button>
+  </nav>
+
+  <section id="panel-skills" role="tabpanel" aria-labelledby="tab-skills">
+    <div class="lanes" id="lanes"></div>
+    <div class="toolbar">
+      <input id="q" type="search" placeholder="Search skills, tools or tasks (e.g. GitHub, review, Jira)" aria-label="Search skills">
+      <div id="readiness" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+    </div>
+    <div class="layout">
+      <div>
+        <div class="grid" id="grid"></div>
+        <p class="empty" id="empty" hidden>No skill matches. Clear the search or pick another stage.</p>
+      </div>
+      <aside class="detail" id="detail" aria-live="polite"></aside>
+    </div>
+  </section>
+
+  <section id="panel-flow" role="tabpanel" aria-labelledby="tab-flow" hidden>
+    <div class="flow" id="flow"></div>
+  </section>
+
+  <section id="panel-roadmap" role="tabpanel" aria-labelledby="tab-roadmap" hidden>
+    <p class="lede" id="road-lede" style="margin:0 0 16px"></p>
+    <div class="road" id="road"></div>
+  </section>
+
+  <section id="panel-ideas" role="tabpanel" aria-labelledby="tab-ideas" hidden>
+    <p class="lede" style="margin:0 0 16px">Skills that would fit this repo's style (grounded, evidence-first engineering workflows) and widen who can use it.</p>
+    <div class="ideas" id="ideas"></div>
+  </section>
+
+  <section id="panel-start" role="tabpanel" aria-labelledby="tab-start" hidden>
+    <div class="steps" id="start"></div>
+  </section>
+
+  <footer id="foot"></footer>
+</div>
+
+<script>
+const DATA = /*TOUR_DATA*/{};
+const $ = (s) => document.querySelector(s);
+const el = (tag, attrs = {}, ...kids) => {
+  const n = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === "class") n.className = v; else if (k === "style") n.style.cssText = v;
+    else if (k.startsWith("on")) n.addEventListener(k.slice(2), v); else n.setAttribute(k, v);
+  }
+  for (const kid of kids.flat()) if (kid != null) n.append(kid.nodeType ? kid : document.createTextNode(kid));
+  return n;
+};
+const stageById = Object.fromEntries(DATA.stages.map((s) => [s.id, s]));
+const skillByName = Object.fromEntries(DATA.skills.map((s) => [s.name, s]));
+const READINESS = DATA.readiness;
+const store = { get(k) { try { return localStorage.getItem(k); } catch { return null; } },
+                set(k, v) { try { localStorage.setItem(k, v); } catch {} } };
+const state = { stage: null, ready: null, q: "", current: store.get("tour.skill") || DATA.skills[0].name };
+
+function copyButton(text) {
+  const b = el("button", { class: "copy", type: "button" }, "Copy");
+  b.addEventListener("click", async () => {
+    try { await navigator.clipboard.writeText(text); b.textContent = "Copied"; }
+    catch { const r = document.createRange(); r.selectNodeContents(b.previousSibling); const s = getSelection(); s.removeAllRanges(); s.addRange(r); b.textContent = "Selected"; }
+    setTimeout(() => (b.textContent = "Copy"), 1600);
+  });
+  return b;
+}
+const pill = (r) => el("span", { class: `pill ${r}` }, READINESS[r].label);
+
+function header() {
+  $("#lede").textContent = DATA.intro;
+  const counts = Object.keys(READINESS).map((r) => `${DATA.skills.filter((s) => s.generic === r).length} ${READINESS[r].label.toLowerCase()}`);
+  $("#meta").append(
+    el("span", {}, `${DATA.skills.length} skills`), el("span", {}, counts.join(" · ")),
+    el("span", {}, "Works in ", DATA.harnesses.join(", ")),
+    el("a", { href: DATA.repo, target: "_blank", rel: "noopener" }, "Repository"));
+  $("#foot").textContent = `Generated from the repo's SKILL.md files and docs/tour/tour.json, as of ${DATA.generated}. Edit those, not this page.`;
+}
+
+function lanes() {
+  const box = $("#lanes");
+  for (const s of DATA.stages) {
+    const n = DATA.skills.filter((k) => k.stage === s.id).length;
+    const b = el("button", { class: "lane", type: "button", style: `--c: var(--${s.id})`, "aria-pressed": "false" },
+      el("b", {}, s.label), el("span", {}, `${s.blurb} · ${n}`));
+    b.addEventListener("click", () => { state.stage = state.stage === s.id ? null : s.id; render(); });
+    box.append(b);
+  }
+  const rbox = $("#readiness");
+  for (const [id, r] of Object.entries(READINESS)) {
+    const c = el("button", { class: "chip", type: "button", "aria-pressed": "false", title: r.hint }, r.label);
+    c.addEventListener("click", () => { state.ready = state.ready === id ? null : id; render(); });
+    c.dataset.id = id; rbox.append(c);
+  }
+  $("#q").addEventListener("input", (e) => { state.q = e.target.value.trim().toLowerCase(); render(); });
+}
+
+function matches(s) {
+  if (state.stage && s.stage !== state.stage) return false;
+  if (state.ready && s.generic !== state.ready) return false;
+  if (!state.q) return true;
+  const hay = [s.name, s.pitch, s.description, s.when, (s.needs || []).join(" "), s.example].join(" ").toLowerCase();
+  return state.q.split(/\s+/).every((w) => hay.includes(w));
+}
+
+function render() {
+  document.querySelectorAll(".lane").forEach((b, i) => b.setAttribute("aria-pressed", String(DATA.stages[i].id === state.stage)));
+  document.querySelectorAll("#readiness .chip").forEach((c) => c.setAttribute("aria-pressed", String(c.dataset.id === state.ready)));
+  const grid = $("#grid"); grid.replaceChildren();
+  const shown = DATA.skills.filter(matches);
+  $("#empty").hidden = shown.length > 0;
+  for (const s of shown) {
+    const st = stageById[s.stage];
+    const card = el("button", { class: "card", type: "button", "aria-current": String(s.name === state.current) },
+      el("div", { class: "top" }, el("span", { class: "name" }, s.name), el("span", { class: "stage-dot", style: `--c: var(--${s.stage})` }, st.label)),
+      el("p", { class: "pitch" }, s.pitch),
+      el("div", { class: "needs" }, pill(s.generic), (s.needs || []).map((n) => el("span", {}, n))));
+    card.addEventListener("click", () => select(s.name));
+    grid.append(card);
+  }
+  detail();
+}
+
+function select(name) { state.current = name; store.set("tour.skill", name); render(); if (matchMedia("(max-width: 860px)").matches) $("#detail").scrollIntoView({ behavior: "smooth", block: "start" }); }
+
+function detail() {
+  const s = skillByName[state.current] || DATA.skills[0];
+  const st = stageById[s.stage];
+  const box = $("#detail"); box.replaceChildren();
+  const chainRow = (label, names) => names && names.length ? el("div", {}, el("div", { class: "label" }, label),
+    el("div", { class: "chain" }, names.map((n) => skillByName[n]
+      ? el("button", { type: "button", onclick: () => select(n) }, n)
+      : el("span", { class: "muted mono" }, n)))) : null;
+  box.append(
+    el("div", {}, el("div", { class: "label", style: `color: var(--${s.stage})` }, st.label), el("h2", { class: "mono", style: "font-family:var(--mono);font-size:1.1rem" }, s.name)),
+    el("p", {}, s.pitch),
+    el("div", {}, el("div", { class: "label" }, "Use it when"), el("p", {}, s.when)),
+    el("div", {}, el("div", { class: "label" }, "Try"), el("div", { class: "prompt" }, el("code", {}, s.example), copyButton(s.example))),
+    el("div", {}, el("div", { class: "label" }, "Needs"), el("div", { class: "needs" }, (s.needs || []).map((n) => el("span", {}, n)))),
+    el("div", {}, el("div", { class: "label" }, "How generic today"), el("p", {}, pill(s.generic), " ", s.genericNote || READINESS[s.generic].hint)),
+    chainRow("Comes before", s.feeds), chainRow("Comes after", s.after),
+    el("details", {}, el("summary", { class: "muted" }, "Full description (from SKILL.md)"), el("p", { class: "muted", style: "margin-top:8px;font-size:.92rem" }, s.description)),
+    el("p", { class: "muted", style: "font-size:.85rem" }, el("a", { href: `${DATA.repo}/tree/main/skills/${s.name}`, target: "_blank", rel: "noopener" }, "Open in repo")));
+}
+
+function flow() {
+  const box = $("#flow");
+  box.append(el("h2", {}, DATA.flow.title), el("p", { class: "lede" }, DATA.flow.intro),
+    el("pre", { class: "mermaid" }, DATA.flow.mermaid),
+    el("div", { class: "flowsteps" }, DATA.flow.steps.map((t, i) => el("div", { class: "flowstep" }, el("span", { class: "n" }, String(i + 1).padStart(2, "0")), el("p", {}, t)))));
+}
+
+function roadmap() {
+  $("#road-lede").textContent = DATA.roadmap.intro;
+  const box = $("#road");
+  for (const ph of DATA.roadmap.phases) {
+    const done = ph.tasks.filter((t) => t.done).length;
+    box.append(el("article", { class: "phase" },
+      el("header", {}, el("h3", {}, ph.title), el("span", { class: "when" }, `${ph.when} · ${done}/${ph.tasks.length} done`)),
+      ph.goal ? el("p", { class: "muted", style: "margin-bottom:8px" }, ph.goal) : null,
+      ph.tasks.map((t) => el("div", { class: `task${t.done ? " done" : ""}` }, el("span", { class: "box", "aria-hidden": "true" }),
+        el("div", {}, el("div", { class: "t" }, t.title), t.why ? el("div", { class: "why" }, t.why) : null)))));
+  }
+}
+
+function ideas() {
+  const box = $("#ideas");
+  for (const i of DATA.ideas) box.append(el("article", { class: "idea" },
+    el("div", { class: "top", style: "display:flex;justify-content:space-between;gap:8px" }, el("h3", { class: "mono", style: "font-family:var(--mono);font-size:.95rem" }, i.name), el("span", { class: "stage-dot", style: `--c: var(--${i.stage})` }, stageById[i.stage].label)),
+    el("p", {}, i.why), i.works ? el("p", { class: "muted", style: "font-size:.88rem" }, "Works with: ", i.works) : null));
+}
+
+function start() {
+  const box = $("#start");
+  for (const s of DATA.start) box.append(el("article", { class: "step" }, el("h3", {}, s.title), el("p", { class: "muted" }, s.text),
+    s.cmd ? el("div", { class: "prompt" }, el("code", {}, s.cmd), copyButton(s.cmd)) : null));
+}
+
+function tabs() {
+  const all = [...document.querySelectorAll('[role="tab"]')];
+  const show = (tab) => { all.forEach((t) => { const on = t === tab; t.setAttribute("aria-selected", String(on)); $("#" + t.getAttribute("aria-controls")).hidden = !on; }); };
+  all.forEach((t) => t.addEventListener("click", () => { show(t); store.set("tour.tab", t.id); }));
+  const hash = (location.hash || "").slice(1);
+  const want = all.find((t) => t.id === "tab-" + hash) || all.find((t) => t.id === store.get("tour.tab"));
+  if (want) show(want);
+}
+
+header(); lanes(); render(); flow(); roadmap(); ideas(); start(); tabs();
+</script>
