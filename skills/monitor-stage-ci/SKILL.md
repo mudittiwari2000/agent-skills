@@ -289,83 +289,27 @@ the move, give the user the Jira key and the link
 ## 7b. Offer the testing request
 
 Once the story is in the QA stage (or would have been, with `--no-move`), the
-QA testers need to hear that it is ready. Unless `--no-request` was given:
+QA testers need to hear that it is ready. Unless `--no-request` was given,
+propose a message and let the user approve, edit or decline it, following
+[`references/alert-thread-replies.md`](references/alert-thread-replies.md):
+the reply grammar, name resolution, one grant and one message per channel, no
+partial or repeat sends, and the thread watch.
 
-1. **Draft the request** from the overlay's template. Without a template, use:
-   a channel-wide mention, "<key> is on stage (<release unit>) and ready for
-   testing", one or two one-line bullets on what to check (taken from the ACs),
-   any unverified or failing AC from step 6 as its own line, and a `cc:` line
-   for the story's QA owner when the overlay or the tracker names one. The same
-   draft goes into the step 8 alert, so the user can copy it from there.
-2. **Let the user say where it goes, in either of two ways.** The run acts on
-   whichever answer comes first, and on any later answer only for channels not
-   yet sent to (see "Sending more than once" below).
-   - **In the terminal:** offer the overlay's channel list for this story's
-     team (several can be picked), plus "don't send", and let them name other
-     channels and people. Show the exact text with each destination's name and
-     id.
-   - **As a reply to the step 8 alert:** the user replies in the alert's thread
-     naming one or more channels and one or more people to cc, e.g.
-     `#qa-channel #other-qa @tester @lead`, or `skip` to send nothing. This is
-     the route for when they are away from the terminal (see "Watching the
-     alert thread" below).
-3. **Resolve every name before sending anything.** Each channel link or
-   `#name` must resolve to exactly one channel id, and each user mention or
-   name to exactly one user id. Ignore any other words in the reply (they are
-   instructions to you, not message text), but quote them in the report, so a
-   note the user meant to include is not lost silently. When any name is
-   unknown or matches more than one channel or person, send nothing: say which
-   name was unclear and wait for a clearer answer. Partial sends from a half
-   understood reply are worse than none. More channels than the overlay's cap
-   (five by default) also means "confirm first": ask in the terminal.
-4. **Build the cc line.** Every person the user named goes in it, in the order
-   given, each once. The people the user names replace the overlay's default
-   QA owner. The default is used only when the user names nobody, and the user
-   can keep it by naming that person too.
-5. **Treat the user's own choice as the grant, and only that.** Each channel
-   the user picked in the terminal or named in their own reply is a one-time
-   grant for one message to that channel. Record one grant per channel wherever
-   your messaging tool's allowlist lives, each quoting the user's words. A
-   reply from anyone else, or one that names no channel, grants nothing.
-6. **Send one message per channel**, with the same text and cc line, through
-   the messaging tool the overlay names. A failed send to one channel does not
-   stop the others. Read each posted message's link back. For any channel whose
-   send was denied or failed, give the user the text to paste there instead.
-7. **Confirm where the user is.** Report every link (and every failure) in the
-   terminal, and, when the answer came as a thread reply, in a short follow-up
-   alert through the step 8 webhook too, since the user is looking at Slack.
+What this skill proposes:
 
-### Sending more than once
+- **Message:** the overlay's template. Without one: a channel-wide mention,
+  "<key> is on stage (<release unit>) and ready for testing", one or two
+  one-line bullets on what to check (taken from the ACs), any unverified or
+  failing AC from step 6 as its own line, and the `cc:` line.
+- **Channels:** the overlay's QA channel for the story's team.
+- **cc:** the story's QA owner (from the overlay or the tracker), with the
+  reason "QA owner". People the user names replace this default; the user keeps
+  the QA owner by naming them too.
+- **No hold:** the release is already on stage, so `send` sends straight away.
 
-Keep a list of the channels this run has sent to. A second answer (the other
-route, or a later reply) sends only to channels not on that list; a channel
-that is already on it is skipped and named as "already sent". Never resend to a
-channel unless the user explicitly says "resend" for it.
-
-### Watching the alert thread
-
-The alert goes out through a webhook, which returns no message id. So:
-
-1. Right after the step 8 post, read the alerts channel with the messaging
-   tool and take the newest message whose first line names this skill and this
-   release unit. That message's timestamp is the thread to watch. If you can't
-   find it, say so and fall back to the terminal question.
-2. Schedule a recurring in-session check (every few minutes, for at most the
-   overlay's watch window, two hours by default). Each check reads the thread's
-   replies newer than the last one handled and keeps only those **written by
-   the user** (the user id the overlay names).
-3. Handle each new reply with steps 3 to 7 above. Stop watching (cancel the
-   scheduled check) after a reply that sent to every channel it named, after
-   `skip`, or when the terminal answer has already covered the send. After an
-   unclear reply, send nothing, report what was unclear (terminal and
-   follow-up alert), and keep watching for a clearer one.
-4. When the watch window ends with no usable reply, cancel the check and say
-   so. The draft in the alert is still there to copy.
-
-The scheduled check lives only as long as this agent session. Tell the user
-that when the watch starts, so they don't reply to the thread after the session
-has closed and expect a send. Say in the confirmation alert that the watch has
-stopped, so a later reply is not expected to do anything.
+Ask in the terminal too (several channels can be picked, plus "don't send"),
+and act on whichever answer comes first. Put the proposal in the step 8 alert
+in the shape the reference gives.
 
 ## 8. Notify (when a notify webhook is configured)
 
@@ -405,7 +349,7 @@ Live check: <version match | KVS entries N, diffs M | job result only>
 <Dependency gaps: <job link> … | none>
 <Story: <key> → <QA stage> | not moved: <reason>>
 <QA: <verdict> — <one line> · <QA evidence|<tracker comment url>> | QA running | QA skipped (--no-qa)>
-<Testing request: draft below, suggested channel <name>; reply here with `#channel … @person …` to send it, or `skip` | sent to <names> | not sent>
+<Testing request: the proposal block from references/alert-thread-replies.md | sent to <names> | not sent>
 <Next: <the one thing the user should do now>>
 ```
 
@@ -415,12 +359,9 @@ Live check: <version match | KVS entries N, diffs M | job result only>
 
 - Never play, retry, cancel or re-run a job without an explicit ask, and then
   only the named job.
-- Never send the testing request to a channel the user did not pick in this
-  run, in the terminal or in their own reply on the alert thread, and never
-  without recording one grant per channel. A reply from anyone else grants
-  nothing.
-- Never send part of a request whose names did not all resolve, and never
-  resend to a channel already sent to without an explicit "resend".
+- Follow the guardrails in `references/alert-thread-replies.md` for the
+  testing request: only the user's own choice of channel, one grant per
+  channel, no partial or repeat sends, no live mentions in the alert.
 - Never let a failing QA result go unmentioned because the story moved anyway:
   it leads the Jira comment, the alert and the testing request.
 - Never touch prod jobs, even when they sit in the same pipeline.
@@ -453,3 +394,8 @@ Live check: <version match | KVS entries N, diffs M | job result only>
   ignore and quote non-mention words, a cap on channels before confirming,
   no resends to a channel already sent to, per-channel failure handling, a
   `skip` reply, and a confirmation alert when the answer came from Slack.
+- **16 October 2026 (night)** — moved the reply handling into
+  `references/alert-thread-replies.md`, shared with monitor-dev-ci. The alert
+  now shows a full proposal (channels, cc with reasons, text). Replies can edit
+  it (`+@x`, `-@y`, `+#ch`, `-#ch`) before `send`, as well as replace it
+  outright or `skip` it.

@@ -1,6 +1,6 @@
 ---
 name: monitor-dev-ci
-description: After a GitLab MR merges (or is set to auto-merge), watch the default-branch pipeline for its merge commit (a monorepo, a single-app service, or any repo with a dev deploy job) until the app is deployed to dev, then hand back the release tag name (from the bumped app version), the merge commit id, the annotation text, and a prefilled GitLab new-tag link (tag name + merge commit filled in) for creating the tag manually. Use when the user says an MR is merged / on auto-merge and asks to "monitor the dev pipeline", "tell me when it's on dev", "give me the tag", or invokes /monitor-dev-ci with an MR IID or commit. Read-only: never creates the tag, never retries or re-runs jobs without asking.
+description: After a GitLab MR merges (or is set to auto-merge), watch the default-branch pipeline for its merge commit (a monorepo, a single-app service, or any repo with a dev deploy job) until the app is deployed to dev, then hand back the release tag name (from the bumped app version), the merge commit id, the annotation text, and a prefilled GitLab new-tag link (tag name + merge commit filled in) for creating the tag manually, and proposes the stage-deployment announcement (MR reviewers and approvers cc'd), which the user can send, edit or skip by replying to the dev alert. Use when the user says an MR is merged / on auto-merge and asks to "monitor the dev pipeline", "tell me when it's on dev", "give me the tag", or invokes /monitor-dev-ci with an MR IID or commit. Read-only: never creates the tag, never retries or re-runs jobs without asking.
 ---
 
 # Monitor an MR through to dev, then prepare its release tag
@@ -38,6 +38,8 @@ user, and record what you learn where the skill says to.
   more than one app, handle each; if it bumped none, say so — there is no new
   tag to cut. A single-app repo has no `<app>`: the root `package.json` is the
   version.
+- **`--no-announce`** (optional): don't offer the stage-deployment announcement
+  (step 6b).
 
 ## Repo profiles
 
@@ -261,10 +263,9 @@ webhook, skip this step and say so in one line.
   successful dev deploy with `--announce-text`, `--announce-channel-name` and
   `--announce-channel-url`. The alert then ends with the announcement as plain
   `mrkdwn`, not a code block, so a link such as a short commit hash keeps its
-  label when copied. An "Open <channel>" link button follows it. The skill never
-  posts the announcement itself: the user copies it when they start the stage
-  deployment. A webhook can't post to a second channel, and an interactive
-  button would need a backend.
+  label when copied. An "Open <channel>" link button follows it. The webhook
+  can't post to a second channel, so the announcement itself is sent only
+  through step 6b, on the user's own `send`, or copied by hand.
 
 Message shape (Slack `mrkdwn`; links are `<url|text>`). The first line names
 the skill that published it, so a reader of the channel can tell which run a
@@ -283,6 +284,39 @@ Tag message:
 On failure, the first line names the failed job and links its log, and the
 new-tag link carries "don't create it until the deploy is fixed".
 
+## 6b. Offer the stage-deployment announcement
+
+When the overlay defines a stage-deployment announcement (a channel and a
+template), the dev alert carries it as a **proposal**, and the user can approve,
+edit or decline it in the terminal or by replying to the alert. Follow the
+shared reply handling in
+[`../monitor-stage-ci/references/alert-thread-replies.md`](../monitor-stage-ci/references/alert-thread-replies.md)
+(the two skills ship together): the reply grammar, name resolution, one grant
+and one message per channel, no partial or repeat sends, and the thread watch.
+Skip this step with `--no-announce`, or when the deploy did not succeed.
+
+What this skill proposes:
+
+- **Message:** the overlay's template. Without one: a channel-wide mention,
+  "Initiating stage deployment for <tag>", the merge commit as a link labelled
+  with its short hash, and the `cc:` line.
+- **Channels:** the overlay's deployment channel.
+- **cc, with a reason each:** the MR's reviewers and approvers
+  (`glab api projects/$P/merge_requests/$IID` for `reviewers`, `…/approvals`
+  for `approved_by`), each once, minus the user and the MR's author when that
+  is the user. Map each GitLab user to the messaging tool's user by email first,
+  then by full name; one that doesn't map to exactly one person is listed as
+  "not found, left out" in the proposal rather than guessed. Reasons read
+  "reviewed !<iid>" or "approved !<iid>".
+- **Hold until the tag exists.** The message says stage is starting, so a
+  `send` before the tag is on the remote (`git ls-remote --tags origin "$TAG"`)
+  is held. Say it is held, check again on each watch tick, and send as soon as
+  the tag appears. `send now` overrides the hold. Never create the tag to clear
+  the hold.
+
+Ask in the terminal too, and act on whichever answer comes first. After the
+send, suggest `/monitor-stage-ci <tag>` as the next step; don't start it unasked.
+
 ## Next: stage
 
 Once the user has cut the tag, `/monitor-stage-ci <tag>` follows the release to
@@ -300,6 +334,9 @@ into one skill that takes the environment as a parameter.
   the tag already exists.
 - Never print or store a notify webhook URL; it is a secret even though it can
   only post to one channel.
+- Never send the stage announcement without the user's own `send` (terminal or
+  their thread reply), and never before the tag exists unless they said
+  `send now`. Follow the guardrails in the shared alert-thread reference.
 
 ## Revision notes
 
@@ -307,3 +344,8 @@ into one skill that takes the environment as a parameter.
   reads (zsh's `:a` modifier broke the unbraced form), and added the check for
   merges that land under this tag without their own version bump. One such
   merge had to be found by hand and added to the tag message.
+- **16 October 2026 (night)** — added step 6b: the dev alert proposes the stage
+  deployment announcement with the MR's reviewers and approvers as the cc,
+  each with a reason. The user approves, edits or declines it by replying in
+  the alert's thread or in the terminal, using the reply handling shared with
+  monitor-stage-ci. A `send` is held until the release tag exists.
