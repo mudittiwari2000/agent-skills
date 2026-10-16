@@ -257,15 +257,17 @@ webhook, skip this step and say so in one line.
   and prints `posted` or `failed: <status> <body>`. `--dry-run` prints the
   payload without posting. On failure, report it in the terminal; the terminal
   report still stands, and the run is not failed because of it.
-- **Announcement call to action (optional).** When the overlay defines a
-  stage-deployment announcement (a channel and a message template), add it on a
-  successful dev deploy with `--announce-text`, `--announce-channel-name` and
-  `--announce-channel-url`. The alert then ends with the announcement as plain
-  `mrkdwn`, not a code block, so a link such as a short commit hash keeps its
-  label when copied. An "Open <channel>" link button follows it. The skill never
-  posts the announcement itself: the user copies it when they start the stage
-  deployment. A webhook can't post to a second channel, and an interactive
-  button would need a backend.
+- **Text the user will paste goes in its own message.** On the Slack mobile app
+  a long-press copies a whole message, and selecting part of one is fiddly.
+  So pass each piece the user will paste elsewhere with `--copy "<label>"
+  "<text>"`: the tag message, and (when the overlay defines a stage-deployment
+  announcement) the announcement. Each is posted as a separate message holding
+  only that text, right after the alert, in order. The alert itself lists them
+  ("Ready to copy: 1. Tag message · 2. Announcement for #channel") and, for the
+  announcement, carries an "Open <channel>" button
+  (`--announce-channel-name`, `--announce-channel-url`). Keep the copy texts
+  free of labels, code fences and surrounding words, so a long-press copies
+  exactly what gets pasted. The skill never posts the announcement itself.
 
 Message shape (Slack `mrkdwn`; links are `<url|text>`). The first line names
 the skill that published it, so a reader of the channel can tell which run a
@@ -276,10 +278,11 @@ message came from:
 <:white_check_mark: | :x: | :hourglass:> <app> <deployed to dev | dev deploy failed | waiting on a manual job>
 Tag: `<tag>`  Merge commit: <commit url|<short sha>>
 <New tag page — prefilled|<new-tag link>>   <Pipeline|<pipeline url>>
-Tag message:
-```<tag message>```
 <one line on anything that didn't go cleanly, or nothing>
+Ready to copy (one message each, below): 1. Tag message · 2. Announcement for <channel>
+[Open <channel>]
 ```
+then one message with only the tag message, then one with only the announcement.
 
 On failure, the first line names the failed job and links its log, and the
 new-tag link carries "don't create it until the deploy is fixed".
@@ -314,3 +317,7 @@ into one skill that takes the environment as a parameter.
   in a skill that runs at merge.
 - **16 October 2026 (night, last)** — the alert script moved to the shared
   `agent-alerts` skill (`../agent-alerts/scripts/notify.py`).
+- **16 October 2026 (evening)** — the tag message and the stage announcement
+  are now posted as separate copy-only messages after the alert (`notify.py
+  --copy`), because on Slack mobile a long-press copies a whole message and
+  picking part of one was hard.

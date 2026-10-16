@@ -40,7 +40,8 @@ NOTIFY_WEBHOOK_URL="$U" python3 scripts/notify.py \
   --status ok|failed|waiting|blocked --headline "<one line>" \
   --line "<mrkdwn line>" … --link "Label=https://…" … \
   [--code "<title>" "<preformatted body>"] \
-  [--announce-text "<copyable mrkdwn>" --announce-channel-name "#ch" --announce-channel-url "https://…"]
+  [--copy "<label>" "<text to paste elsewhere>"] … \
+  [--announce-channel-name "#ch" --announce-channel-url "https://…" --announce-button "<label>"]
 ```
 
 It builds the payload with a serializer, so quotes and newlines can't break it,
@@ -48,6 +49,11 @@ and prints `posted` or `failed: <status> <body>`. `--dry-run` prints the payload
 without posting. A failed post is reported in the terminal and never fails the
 calling skill.
 
+- **Anything the user will paste elsewhere goes in its own message** (`--copy`):
+  on Slack mobile a long-press copies a whole message, and selecting part of
+  one is hard. Each copy message holds only that text, posted right after the
+  alert, in order; the alert lists them. `--announce-text` (text inside the
+  alert) is for desktop-only cases.
 - The first line always names the calling skill, so the desk reads as a log of
   which run said what.
 - **No live mentions in an alert.** Write people and `@here` as plain text
@@ -161,6 +167,9 @@ person, and say so).
   message is the truth.
 
 ## Revision notes
+
+- **16 October 2026 (evening, later)** — added `--copy`: text to paste
+  elsewhere is posted as its own message after the alert, for mobile copy.
 
 - **16 October 2026 (evening)** — a dev alert's literal "@here" rendered as a
   live mention in the desk, and "Tag message::" doubled its colon. notify.py

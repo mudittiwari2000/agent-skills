@@ -60,6 +60,20 @@ def build_payload(args: argparse.Namespace) -> dict:
             }
         )
 
+    if args.copy:
+        items = "  ·  ".join(f"{i}. {label}" for i, (label, _) in enumerate(args.copy, 1))
+        blocks.append(
+            {
+                "type": "context",
+                "elements": [
+                    {
+                        "type": "mrkdwn",
+                        "text": f"*Ready to copy* (one message each, below; long-press to copy on mobile): {items}",
+                    }
+                ],
+            }
+        )
+
     if args.announce_text:
         blocks.append({"type": "divider"})
         blocks.append(
@@ -82,25 +96,24 @@ def build_payload(args: argparse.Namespace) -> dict:
         blocks.append(
             {"type": "section", "text": {"type": "mrkdwn", "text": args.announce_text}}
         )
-        if args.announce_channel_url:
-            blocks.append(
-                {
-                    "type": "actions",
-                    "elements": [
-                        {
-                            "type": "button",
-                            "text": {
-                                "type": "plain_text",
-                                "text": args.announce_button
-                                or f"Open {args.announce_channel_name}",
-                            },
-                            "url": args.announce_channel_url,
-                            "action_id": "open_announce_channel",
-                        }
-                    ],
-                }
-            )
-
+    if args.announce_channel_url:
+        blocks.append(
+            {
+                "type": "actions",
+                "elements": [
+                    {
+                        "type": "button",
+                        "text": {
+                            "type": "plain_text",
+                            "text": args.announce_button
+                            or f"Open {args.announce_channel_name}",
+                        },
+                        "url": args.announce_channel_url,
+                        "action_id": "open_announce_channel",
+                    }
+                ],
+            }
+        )
     # verbatim: Slack must not parse the text. Unparsed, a literal "@here" or
     # "@Name" stays plain text (no ping in the alerts channel) and a "#channel"
     # is not auto-linked. Explicit <url|label> links still render.
@@ -127,6 +140,11 @@ def main() -> int:
     parser.add_argument("--announce-channel-url")
     parser.add_argument("--announce-note", help="mrkdwn line above the copyable text (default: the stage-deployment note)")
     parser.add_argument("--announce-button", help="button label (default: 'Open <channel name>')")
+    parser.add_argument(
+        "--copy", nargs=2, action="append", metavar=("LABEL", "TEXT"),
+        help="text the user will paste elsewhere; posted as its own message after the alert "
+        "(so it can be copied whole, e.g. on mobile); repeatable, posted in order",
+    )
     parser.add_argument("--dry-run", action="store_true", help="print the payload, do not post")
     args = parser.parse_args()
 
@@ -135,10 +153,12 @@ def main() -> int:
         args.announce_text = args.announce_text.replace("\\n", "\n")
     if args.code:
         args.code = [(title, body.replace("\\n", "\n")) for title, body in args.code]
+    if args.copy:
+        args.copy = [(label, text.replace("\\n", "\n")) for label, text in args.copy]
 
-    payload = build_payload(args)
+    payloads = [build_payload(args)] + [copy_payload(text) for _, text in args.copy or []]
     if args.dry_run:
-        print(json.dumps(payload, indent=2))
+        print(json.dumps(payloads if len(payloads) > 1 else payloads[0], indent=2))
         return 0
 
     url = os.environ.get("NOTIFY_WEBHOOK_URL", "")
@@ -146,6 +166,25 @@ def main() -> int:
         print("failed: NOTIFY_WEBHOOK_URL is missing or not a Slack webhook URL")
         return 1
 
+    for number, payload in enumerate(payloads):
+        result = post(url, payload)
+        if result != "ok":
+            what = "alert" if number == 0 else f"copy message {number}"
+            print(f"failed ({what}): {result}")
+            return 1
+    print("posted" if len(payloads) == 1 else f"posted (alert + {len(payloads) - 1} copy messages)")
+    return 0
+
+
+def copy_payload(text: str) -> dict:
+    """A message holding only the text to copy: no label, no formatting around it."""
+    return {
+        "text": text,
+        "blocks": [{"type": "section", "text": {"type": "mrkdwn", "text": text, "verbatim": True}}],
+    }
+
+
+def post(url: str, payload: dict) -> str:
     request = urllib.request.Request(
         url,
         data=json.dumps(payload).encode(),
@@ -156,16 +195,12 @@ def main() -> int:
         with urllib.request.urlopen(request, timeout=15) as response:
             body = response.read().decode(errors="replace")
             if response.status == 200 and body.strip() == "ok":
-                print("posted")
-                return 0
-            print(f"failed: {response.status} {body[:200]}")
-            return 1
+                return "ok"
+            return f"{response.status} {body[:200]}"
     except urllib.error.HTTPError as error:
-        print(f"failed: {error.code} {error.read().decode(errors='replace')[:200]}")
-        return 1
+        return f"{error.code} {error.read().decode(errors='replace')[:200]}"
     except urllib.error.URLError as error:
-        print(f"failed: {error.reason}")
-        return 1
+        return str(error.reason)
 
 
 if __name__ == "__main__":
