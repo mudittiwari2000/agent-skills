@@ -76,6 +76,7 @@ Could I please get a review on [!<iid>](<MR URL>)?
 [<KEY>](<ticket URL>) <MR title without "Draft:">
 - <what changed, one line>
 - <what changed, one line>
+
 <@reviewer>: <reason>
 <@reviewer> <@reviewer>: <shared reason>
 ```
@@ -85,7 +86,7 @@ Could I please get a review on [!<iid>](<MR URL>)?
 - No test counts, commit counts, QA status or open-thread status. Those belong
   in the MR.
 - One line per reviewer (or per group sharing a reason), with real mentions in
-  the draft.
+  the draft, after a blank line so the last bullet doesn't swallow it.
 
 ## 4. Hand it to agent-alerts
 

@@ -70,6 +70,12 @@ When the calling skill needs a message to reach other people:
      paste instead.
    - If the user isn't a member of the channel, the draft fails. Say so; offer
      the text to paste.
+   - **Formatting in drafts:** leave a blank line after a bullet list. Without
+     it the next line (a `cc:` or reviewer line) is joined onto the last bullet.
+   - **Link previews:** a link to a page behind single sign-on unfurls as the
+     login page (e.g. "SAML single sign-on"). The draft call can't turn previews
+     off, so say in the alert that the preview should be dismissed before
+     sending.
 3. **Post the alert** (section 1) with:
    - what the draft is for, and the channel(s);
    - the people, each with their reason, as plain text;
@@ -150,6 +156,11 @@ person, and say so).
   message is the truth.
 
 ## Revision notes
+
+- **16 October 2026 (later)** — a test draft showed two rendering issues: a
+  line after a bullet list joins the last bullet unless a blank line separates
+  them, and an SSO-protected link unfurls as the login page. Added both to
+  section 2.
 
 - **16 October 2026** — first version, taken from the thread-reply rules that
   monitor-stage-ci grew the same day. The user asked for messages that tag
