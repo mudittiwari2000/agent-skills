@@ -257,17 +257,24 @@ webhook, skip this step and say so in one line.
   and prints `posted` or `failed: <status> <body>`. `--dry-run` prints the
   payload without posting. On failure, report it in the terminal; the terminal
   report still stands, and the run is not failed because of it.
-- **Text the user will paste goes in its own message.** On the Slack mobile app
-  a long-press copies a whole message, and selecting part of one is fiddly.
-  So pass each piece the user will paste elsewhere with `--copy "<label>"
-  "<text>"`: the tag message, and (when the overlay defines a stage-deployment
-  announcement) the announcement. Each is posted as a separate message holding
-  only that text, right after the alert, in order. The alert itself lists them
-  ("Ready to copy: 1. Tag message · 2. Announcement for #channel") and, for the
-  announcement, carries an "Open <channel>" button
-  (`--announce-channel-name`, `--announce-channel-url`). Keep the copy texts
-  free of labels, code fences and surrounding words, so a long-press copies
-  exactly what gets pasted. The skill never posts the announcement itself.
+- **The tag message goes in its own message.** On the Slack mobile app a
+  long-press copies a whole message, and selecting part of one is fiddly. So
+  pass it with `--copy "Tag message" "<text>"`: it is posted as a separate
+  message holding only that text, right after the alert. Keep it free of
+  labels and code fences, so a long-press copies exactly what gets pasted into
+  the new-tag form.
+- **The stage-deployment announcement is a draft, not text to copy.** When the
+  overlay defines one (a channel and a template), create it as an unsent draft
+  in that channel through the `agent-alerts` skill (`../agent-alerts/SKILL.md`,
+  "draft, don't send"), with the real channel-wide mention and the commit
+  linked. Copied text loses both on mobile: the mention arrives as plain text
+  and the commit link drops. The alert says the draft is ready and carries an
+  "Open <channel>, draft ready" button (`--announce-channel-name`,
+  `--announce-channel-url` from the draft's channel link, `--announce-button`).
+  The user sends it when they start the stage deployment. No watch is needed:
+  nothing follows the send. If the channel already holds an unsent draft, or
+  the draft can't be created, post the announcement as a `--copy` message
+  instead and say why. The skill never posts the announcement itself.
 
 Message shape (Slack `mrkdwn`; links are `<url|text>`). The first line names
 the skill that published it, so a reader of the channel can tell which run a
@@ -279,10 +286,11 @@ message came from:
 Tag: `<tag>`  Merge commit: <commit url|<short sha>>
 <New tag page — prefilled|<new-tag link>>   <Pipeline|<pipeline url>>
 <one line on anything that didn't go cleanly, or nothing>
-Ready to copy (one message each, below): 1. Tag message · 2. Announcement for <channel>
-[Open <channel>]
+Ready to copy (one message each, below): 1. Tag message
+Announcement for <channel>: draft ready
+[Open <channel>, draft ready]
 ```
-then one message with only the tag message, then one with only the announcement.
+then one message with only the tag message.
 
 On failure, the first line names the failed job and links its log, and the
 new-tag link carries "don't create it until the deploy is fixed".
@@ -321,3 +329,7 @@ into one skill that takes the environment as a parameter.
   are now posted as separate copy-only messages after the alert (`notify.py
   --copy`), because on Slack mobile a long-press copies a whole message and
   picking part of one was hard.
+- **16 October 2026 (evening, last)** — the stage announcement is now an unsent
+  Slack draft in the deployment channel (through agent-alerts) instead of copy
+  text: copying on mobile lost the channel-wide mention and the commit link.
+  The tag message stays a separate copy message.
