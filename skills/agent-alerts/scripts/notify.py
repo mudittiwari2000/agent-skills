@@ -56,7 +56,7 @@ def build_payload(args: argparse.Namespace) -> dict:
         blocks.append(
             {
                 "type": "section",
-                "text": {"type": "mrkdwn", "text": f"{title}:\n```{body}```"},
+                "text": {"type": "mrkdwn", "text": f"{title.rstrip(':')}:\n```{body}```"},
             }
         )
 
@@ -68,7 +68,8 @@ def build_payload(args: argparse.Namespace) -> dict:
                 "elements": [
                     {
                         "type": "mrkdwn",
-                        "text": (
+                        "text": args.announce_note
+                        or (
                             f"*Next:* copy the message below into {args.announce_channel_name} "
                             "when you start the stage deployment"
                         ),
@@ -90,7 +91,8 @@ def build_payload(args: argparse.Namespace) -> dict:
                             "type": "button",
                             "text": {
                                 "type": "plain_text",
-                                "text": f"Open {args.announce_channel_name}",
+                                "text": args.announce_button
+                                or f"Open {args.announce_channel_name}",
                             },
                             "url": args.announce_channel_url,
                             "action_id": "open_announce_channel",
@@ -98,6 +100,14 @@ def build_payload(args: argparse.Namespace) -> dict:
                     ],
                 }
             )
+
+    # verbatim: Slack must not parse the text. Unparsed, a literal "@here" or
+    # "@Name" stays plain text (no ping in the alerts channel) and a "#channel"
+    # is not auto-linked. Explicit <url|label> links still render.
+    for block in blocks:
+        for obj in [block.get("text")] + list(block.get("elements") or []):
+            if isinstance(obj, dict) and obj.get("type") == "mrkdwn":
+                obj["verbatim"] = True
 
     # Plain-text fallback for notifications and clients that do not render blocks.
     return {"text": f"{args.skill} · {args.repo}: {args.headline}", "blocks": blocks}
@@ -115,6 +125,8 @@ def main() -> int:
     parser.add_argument("--announce-text")
     parser.add_argument("--announce-channel-name", default="the team channel")
     parser.add_argument("--announce-channel-url")
+    parser.add_argument("--announce-note", help="mrkdwn line above the copyable text (default: the stage-deployment note)")
+    parser.add_argument("--announce-button", help="button label (default: 'Open <channel name>')")
     parser.add_argument("--dry-run", action="store_true", help="print the payload, do not post")
     args = parser.parse_args()
 

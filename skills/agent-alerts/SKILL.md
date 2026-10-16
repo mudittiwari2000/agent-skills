@@ -52,6 +52,11 @@ calling skill.
   which run said what.
 - **No live mentions in an alert.** Write people and `@here` as plain text
   (`@Name`), never `<@U…>` or `<!here>`, so the desk pings nobody.
+  Plain text alone isn't enough: unparsed by default, Slack turns a literal
+  `@here` into a real mention. `notify.py` marks every text block `verbatim`,
+  which stops that (and stops `#channel` auto-linking); explicit `<url|label>`
+  links still work. Use `--announce-note` and `--announce-button` to word the
+  copy block's intro and its button (e.g. "Open #ch, draft ready").
 
 ## 2. Messages that tag other people: draft, don't send
 
@@ -156,6 +161,11 @@ person, and say so).
   message is the truth.
 
 ## Revision notes
+
+- **16 October 2026 (evening)** — a dev alert's literal "@here" rendered as a
+  live mention in the desk, and "Tag message::" doubled its colon. notify.py
+  now sets `verbatim` on every text block and strips a trailing colon from
+  `--code` titles; added `--announce-note` and `--announce-button`.
 
 - **16 October 2026 (later)** — a test draft showed two rendering issues: a
   line after a bullet list joins the last bullet unless a blank line separates
