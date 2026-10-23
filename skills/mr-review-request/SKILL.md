@@ -31,7 +31,8 @@ channel and use the default template below.
 - **Ticket key**: from the MR title or source branch (`KEY-123`); ask only if
   neither has one.
 - **`--keep-draft`**: don't mark the MR ready on send (the same as the user
-  replying `draft` in the alert's thread).
+  replying `draft` in the alert's thread). Section 6 lists every thread
+  command.
 - **Starting automatically:** a hook may start this skill right after an MR is
   created. That is safe, because the skill only drafts and alerts. Don't ask
   questions in that case; put anything uncertain in the alert.
@@ -100,6 +101,8 @@ Give `agent-alerts`:
 - **Text:** step 3.
 - **Identifier:** the MR URL and `!<iid>`.
 - **Watch window:** the overlay's, four hours by default.
+- **Commands:** the table in section 6, and keep watching after the send,
+  because `bump`, `undraft` and reviewer changes still apply then.
 
 The alert's headline is "<KEY> review request ready: !<iid>". It also lists
 the MR's state (draft or ready) and what will happen on send (step 5).
@@ -130,6 +133,32 @@ actually tagged. Then:
 If the sent message tags nobody, change no reviewers, add no note and don't
 mark it ready. Say so, and let the user decide.
 
+## 6. Commands from the alert's thread
+
+The user can steer the review request from Slack without opening the terminal.
+These are added to the agent-alerts built-ins (`skip`, `#ch`, `sent`, `status`,
+`stop`, `help`) and follow its rules: only the user's own replies count, each
+handled reply gets a follow-up alert, and a **confirmed** command waits for
+`yes` in the thread.
+
+| Reply | Effect | Kind |
+| --- | --- | --- |
+| `go` | Use the suggested reviewers without a Slack message: set them on the MR, add the reasons note, mark the MR ready. The Slack draft stays for the user to send or delete. | direct |
+| `reviewers @a @b` | Set exactly these people as the MR's reviewers, plus the reasons note. Slack mentions or names, each resolved to one GitLab user; anyone who doesn't resolve is reported and left out. | direct |
+| `+@a` / `-@a` | Add or remove one reviewer. | direct |
+| `undraft` (or `ready`) | Mark the MR ready now. | direct |
+| `draft` (or `keep draft`) | On send, keep the MR a draft; if it is already ready, set it back to draft. | direct |
+| `bump` | Bump the version the repo's convention asks for (the repo's agent instructions, or the overlay's rule for the repo), commit with the repo's commit format, and push. Post the planned files and versions first. If the change touches nothing the convention versions, say so and change nothing. | confirmed |
+| `rebase` | Rebase or merge the default branch into the MR branch, run the repo's checks for what changed, and push. Post the plan and any conflicts first. | confirmed |
+| free text | Anything else, e.g. "fix the nit in the spec", "also ask Priya". Work it out as section 3 of agent-alerts says; code changes are confirmed, and messages to other people become a new draft, never a send. | per action |
+
+- Reviewer commands change the MR's GitLab reviewers and the reasons note
+  only. They never edit or send the Slack message: if the user wants the
+  request itself changed, offer a new draft.
+- After a `bump` or `rebase` push, say in the follow-up whether any review or
+  QA evidence was invalidated (the tree changed) and what would re-validate it.
+- Merging is never a thread command. Point to the terminal.
+
 ## Guardrails
 
 - Never post the review request yourself; draft it and let the user send it.
@@ -138,8 +167,15 @@ mark it ready. Say so, and let the user decide.
 - Never draft a second request for an MR that already has one.
 - Never set reviewers from the proposal: only from the message the user sent.
 - Never put test or commit counts in the request.
+- Never commit or push from a thread command without the user's `yes` to
+  the posted plan.
 
 ## Revision notes
+
+- **23 October 2026** — added section 6, thread commands (`go`, `reviewers`,
+  `+@`/`-@`, `undraft`, `draft`, `bump`, `rebase`, free text), at the user's
+  request to control undrafting, reviewers and version bumps from Slack. The
+  watch now continues after the send so post-send commands work.
 
 - **16 October 2026** — first version, at the user's request: prepare the
   review request after an MR opens, so they can edit the channel and reviewers

@@ -1,5 +1,5 @@
 {
-  "asOf": "2026-10-16",
+  "asOf": "2026-10-23",
   "repo": "https://github.com/mudittiwari2000/agent-skills",
   "intro": "Grounded engineering-workflow skills for AI coding agents. Each one checks claims against the real code, pipeline or ticket before it reports, and leaves the judgement calls (and anything sent to other people) to you. Pick a stage to see the skills for that part of delivery, or search for a tool or task.",
   "harnesses": [
@@ -110,7 +110,7 @@
     },
     "mr-review-request": {
       "stage": "review",
-      "pitch": "Prepares the review request when an MR opens: reviewers from related work with a reason each, drafted in the team channel for you to edit and send.",
+      "pitch": "Prepares the review request when an MR opens: reviewers from related work with a reason each, drafted in the team channel for you to edit and send. Reply in the alert thread to go with the suggestions, change reviewers, undraft or bump the version.",
       "when": "An MR has just been opened (a hook can start it), or you say \"request a review\".",
       "example": "/mr-review-request !123",
       "needs": [
@@ -253,8 +253,8 @@
     },
     "agent-alerts": {
       "stage": "operate",
-      "pitch": "One private channel where long-running skills report back. Messages that tag other people become drafts you send yourself, never sends.",
-      "when": "Used by the CI and review-request skills; load it from any skill that needs to tell you something while you're away.",
+      "pitch": "One private channel where long-running skills report back, and whose alert threads act as a remote control: reply from Slack to steer the run. Messages that tag other people become drafts you send yourself, never sends.",
+      "when": "Used by the CI and review-request skills; load it from any skill that needs to tell you something while you are away, or take commands back from you.",
       "example": "Post a test alert to my agent desk",
       "needs": [
         "Slack webhook",
