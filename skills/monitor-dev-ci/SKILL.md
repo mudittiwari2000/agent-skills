@@ -58,6 +58,7 @@ an overlay is installed — the overlay holds the real rows).
 | Tag name (`$TAG`) | `<app>-v<version>` | `v<version>` |
 | `$TAG_PREFIX` | `<app>-v` | `v` |
 | Tag message style | from real tags (step 4) | from real tags (step 4) |
+| Stage announcement names | `<tag>` (the tag already names the app) | `<service> <tag>` (a bare `v<version>` names nothing) |
 
 ## 1. Wait for the merge
 
@@ -275,6 +276,14 @@ webhook, skip this step and say so in one line.
   nothing follows the send. If the channel already holds an unsent draft, or
   the draft can't be created, post the announcement as a `--copy` message
   instead and say why. The skill never posts the announcement itself.
+- **The announcement names what is being deployed.** Fill it from the repo
+  profile's "Stage announcement names" row, not from the tag alone. In a
+  monorepo the tag (`<app>-v<version>`) already names the app; in a single-app
+  repo the tag is a bare `v<version>`, so the line must also carry the
+  service name the team uses in that channel (read it off real announcements
+  there). An overlay template written from one repo's posts must not be
+  applied unchanged to another repo: a bare `Initiating stage deployment for
+  v1.2.3` reads as some other repo's release.
 
 Message shape (Slack `mrkdwn`; links are `<url|text>`). The first line names
 the skill that published it, so a reader of the channel can tell which run a
@@ -291,6 +300,9 @@ Announcement for <channel>: draft ready
 [Open <channel>, draft ready]
 ```
 then one message with only the tag message.
+
+`notify.py` writes the "Ready to copy" line itself for every `--copy` message,
+so don't also pass it as a `--line`; the alert would show it twice.
 
 On failure, the first line names the failed job and links its log, and the
 new-tag link carries "don't create it until the deploy is fixed".
@@ -333,3 +345,9 @@ into one skill that takes the environment as a parameter.
   Slack draft in the deployment channel (through agent-alerts) instead of copy
   text: copying on mobile lost the channel-wide mention and the commit link.
   The tag message stays a separate copy message.
+- **27 October 2026** — a single-app service run drafted the stage
+  announcement as `Initiating stage deployment for v<version>`. The template came from monorepo
+  posts, where the tag names the app; for a single-app repo it named nothing
+  and read as a monorepo release. Added the "Stage announcement names" profile
+  row and the rule that the announcement names the service. Also: don't pass
+  the "Ready to copy" line yourself, `notify.py` adds it.
