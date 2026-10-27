@@ -1,5 +1,5 @@
 {
-  "asOf": "2026-10-23",
+  "asOf": "2026-10-27",
   "repo": "https://github.com/mudittiwari2000/agent-skills",
   "intro": "Grounded engineering-workflow skills for AI coding agents. Each one checks claims against the real code, pipeline or ticket before it reports, and leaves the judgement calls (and anything sent to other people) to you. Pick a stage to see the skills for that part of delivery, or search for a tool or task.",
   "harnesses": [
@@ -186,7 +186,7 @@
     },
     "monitor-dev-ci": {
       "stage": "ship",
-      "pitch": "Watches the default-branch pipeline after a merge until the app is on dev, then hands back the release tag, the commit, a prefilled new-tag link and a drafted stage-deployment announcement.",
+      "pitch": "Watches the default-branch pipeline after a merge until the app is on dev, then hands back the release tag, the commit, a prefilled new-tag link and a drafted stage-deployment announcement that names the service (for a single-app repo, whose bare tag names nothing).",
       "when": "An MR has merged or is on auto-merge and you want to know when it's on dev.",
       "example": "/monitor-dev-ci !123",
       "needs": [
