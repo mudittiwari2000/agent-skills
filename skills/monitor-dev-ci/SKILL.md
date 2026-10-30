@@ -248,6 +248,11 @@ there as the run's last step, on **every** terminal outcome: deployed, failed,
 waiting on a manual job, canceled, or tag already exists. Without a configured
 webhook, skip this step and say so in one line.
 
+**Thread watch: on by default.** After posting the alert, run the `agent-alerts`
+watch (section 5 there) on its thread, every 4 minutes (or the overlay's
+interval), so the user can steer the run from Slack. This skill is one of the
+two whose watch is default-on. If the user says not to watch, don't.
+
 - Read the URL into a variable from the config/secret helper the overlay names.
   Check its shape (`https://hooks.slack.com/services/...` for Slack), and never
   echo it, log it, or put it in a file, a commit or the transcript.
@@ -326,6 +331,11 @@ into one skill that takes the environment as a parameter.
   only post to one channel.
 
 ## Revision notes
+
+- **30 October 2026** — agent-alerts made thread watches opt-in. This skill
+  keeps its watch **on by default**, every 4 minutes (or the overlay's
+  interval), because its runs are long and the alert thread is where the user
+  steers them. The user chose this explicitly.
 
 - **16 October 2026** — quoted and braced `"${MERGE_SHA}:<path>"` in the version
   reads (zsh's `:a` modifier broke the unbraced form), and added the check for

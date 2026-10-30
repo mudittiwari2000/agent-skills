@@ -1,5 +1,5 @@
 {
-  "asOf": "2026-10-27",
+  "asOf": "2026-10-30",
   "repo": "https://github.com/mudittiwari2000/agent-skills",
   "intro": "Grounded engineering-workflow skills for AI coding agents. Each one checks claims against the real code, pipeline or ticket before it reports, and leaves the judgement calls (and anything sent to other people) to you. Pick a stage to see the skills for that part of delivery, or search for a tool or task.",
   "harnesses": [
@@ -253,7 +253,7 @@
     },
     "agent-alerts": {
       "stage": "operate",
-      "pitch": "One private channel where long-running skills report back, and whose alert threads act as a remote control: reply from Slack to steer the run. Messages that tag other people become drafts you send yourself, never sends.",
+      "pitch": "One private channel where long-running skills report back, and whose alert threads act as a remote control: reply from Slack to steer the run. Messages that tag other people become drafts you send yourself, never sends. Slack is polled only where it pays: the CI monitors watch by default, everything else waits for you to say 'sent'.",
       "when": "Used by the CI and review-request skills; load it from any skill that needs to tell you something while you are away, or take commands back from you.",
       "example": "Post a test alert to my agent desk",
       "needs": [

@@ -30,6 +30,8 @@ channel and use the default template below.
   (`glab mr view --output json`). `$P` is the URL-encoded project path.
 - **Ticket key**: from the MR title or source branch (`KEY-123`); ask only if
   neither has one.
+- **`--watch`**: poll Slack for the send and thread commands (section 4).
+  Off by default.
 - **`--keep-draft`**: don't mark the MR ready on send (the same as the user
   replying `draft` in the alert's thread). Section 6 lists every thread
   command.
@@ -100,9 +102,14 @@ Give `agent-alerts`:
 - **People:** the reviewers from step 2, with their reasons.
 - **Text:** step 3.
 - **Identifier:** the MR URL and `!<iid>`.
-- **Watch window:** the overlay's, four hours by default.
-- **Commands:** the table in section 6, and keep watching after the send,
-  because `bump`, `undraft` and reviewer changes still apply then.
+- **Watch:** opt-in. Start one only on `--watch` or when the user asks;
+  then it checks at most every 15 minutes, for the overlay's window (four
+  hours by default), and stops on the send. Without a watch, tell the user to
+  say `sent` in the terminal once they have sent the request; then check once
+  and do section 5.
+- **Commands:** the table in section 6. They are read from the thread on each
+  check: on a watch tick, or when the user says `sent` or asks you to look at
+  the thread.
 
 The alert's headline is "<KEY> review request ready: !<iid>". It also lists
 the MR's state (draft or ready) and what will happen on send (step 5).
@@ -171,6 +178,12 @@ handled reply gets a follow-up alert, and a **confirmed** command waits for
   the posted plan.
 
 ## Revision notes
+
+- **30 October 2026** — the watch is opt-in (`--watch`). By default the user
+  says `sent` in the terminal and one check runs, because a 4-minute poll ran
+  for hours on one MR and the user would rather not pay for that
+  convenience. An opt-in watch checks at most every 15 minutes and stops on
+  the send.
 
 - **23 October 2026** — added section 6, thread commands (`go`, `reviewers`,
   `+@`/`-@`, `undraft`, `draft`, `bump`, `rebase`, free text), at the user's

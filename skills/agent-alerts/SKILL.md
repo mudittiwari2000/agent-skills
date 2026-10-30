@@ -1,6 +1,6 @@
 ---
 name: agent-alerts
-description: Shared plumbing for skills that report to the user through one private "agent desk" channel. Posts an alert there through an incoming webhook (scripts/notify.py). For any message that tags other people (an MR review request, a testing request), it never sends: it creates a ready Slack draft in the target channel, with the suggested people and the reasons, so the user edits and sends it themselves. It watches the alert's thread for the user's replies, notices when the user has sent the draft, and hands the final channel and people back to the calling skill. Load it from monitor-dev-ci, monitor-stage-ci, mr-review-request, or any skill that tells the user something and lets them decide what goes to a team channel.
+description: Shared plumbing for skills that report to the user through one private "agent desk" channel. Posts an alert there through an incoming webhook (scripts/notify.py). For any message that tags other people (an MR review request, a testing request), it never sends: it creates a ready Slack draft in the target channel, with the suggested people and the reasons, so the user edits and sends it themselves. It notices the user's thread replies and when the user has sent the draft (by a watch where the calling skill or the user turns one on, otherwise when the user says so in the terminal), and hands the final channel and people back to the calling skill. Load it from monitor-dev-ci, monitor-stage-ci, mr-review-request, or any skill that tells the user something and lets them decide what goes to a team channel.
 ---
 
 # Agent alerts
@@ -95,8 +95,9 @@ When the calling skill needs a message to reach other people:
    - the full text as a fallback to copy;
    - the commands that apply, built-in plus the calling skill's, in one or two
      lines (`help` in the thread lists them in full) (section 3).
-4. **Tell the user in the terminal** the same thing in two lines, and that the
-   watch is running (section 5) and for how long.
+4. **Tell the user in the terminal** the same thing in two lines. If a watch
+   is running (section 5), say for how long. If not, say that they should tell
+   you `sent` (or any thread command) in the terminal when they have acted.
 
 The user edits the draft in Slack (adds or removes people, rewrites lines,
 deletes it) and sends it themselves. Never call the messaging tool's send for
@@ -182,6 +183,27 @@ person, and say so).
 
 ## 5. Watching
 
+A watch is a scheduled in-session check that reads Slack: the alert's thread
+for commands, and the draft's channel for the send. Each tick is a full agent
+turn and a few Slack reads on the user's own token. Slack doesn't bill per
+call, but polling is real usage, so **a watch is opt-in unless the calling
+skill makes it the default**:
+
+- **Default-on:** the calling skill says so. Today these are `monitor-dev-ci`
+  and `monitor-stage-ci`, whose runs are long and whose alerts are where the
+  user steers them. Use their interval: the overlay's, else every 4 minutes.
+- **Opt-in (everything else, e.g. `mr-review-request`):** start no watch unless
+  the user asks for one (a `--watch` flag or plain words). Without one, the
+  user tells you `sent`, or gives any thread command, in the terminal. Then
+  run section 4 once, do the follow-up, and handle any thread replies already
+  waiting, as one pass of section 3. An opt-in watch checks no more often than
+  every 15 minutes (or the overlay's interval, if longer) and stops on the
+  send.
+- An overlay may tighten either default, for example by turning every watch
+  off. It may not turn on a watch the user hasn't asked for.
+
+When a watch runs:
+
 - Find the alert's thread: the webhook returns no message id, so read the desk
   channel right after posting and take the newest message whose first line
   names the calling skill and its identifier. If it can't be found, say so; the
@@ -192,15 +214,16 @@ person, and say so).
   commands in force, the handled reply timestamps, any plan waiting for `yes`,
   and whether the send has been seen. Each tick reads it first and writes it
   last. That way a tick knows which replies are new, and a restarted session
-  can resume the watch from the file.
-- Schedule a recurring in-session check every few minutes for the calling
-  skill's watch window (the overlay's default when the skill gives none). Each
-  check handles new thread commands (section 3), then looks for the send
+  can resume the watch from the file. Write the same file without a watch, so
+  a terminal `sent` check knows the draft time and channel.
+- Schedule the recurring check at the interval above, for the calling skill's
+  watch window (the overlay's default when the skill gives none). Each check
+  handles new thread commands (section 3), then looks for the send
   (section 4). The scheduled prompt should name the skill, the state file and
   the identifier, and point to this section. The details live in the file.
 - After a send, keep watching until the window ends only if the calling skill
-  declares commands that still make sense afterwards (e.g. `bump` after a
-  review request). Otherwise stop on the send.
+  makes the watch default-on **and** declares commands that still make sense
+  afterwards. An opt-in watch always stops on the send.
 - Stop on `skip` / `stop`, or when the window ends. On window end, post a last
   alert: what is still pending (an unsent draft, a plan waiting for `yes`).
   Sending a draft after that won't trigger the follow-up, so the user should
@@ -246,6 +269,13 @@ person, and say so).
   line after a bullet list joins the last bullet unless a blank line separates
   them, and an SSO-protected link unfurls as the login page. Added both to
   section 2.
+
+- **30 October 2026** — watches are opt-in unless the calling skill makes them
+  the default (monitor-dev-ci and monitor-stage-ci do). The user asked after a
+  review-request watch had polled Slack every 4 minutes for hours: "I cannot
+  risk a charge for the convenience here." Without a watch, the user says
+  `sent` in the terminal and one check runs. Opt-in watches run at most every
+  15 minutes and stop on the send.
 
 - **16 October 2026** — first version, taken from the thread-reply rules that
   monitor-stage-ci grew the same day. The user asked for messages that tag

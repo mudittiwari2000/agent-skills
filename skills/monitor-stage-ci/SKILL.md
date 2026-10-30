@@ -319,6 +319,11 @@ on a manual job, a dependency gap found (step 5), QA finished (pass, follow-up
 or fail), or stopped because the requirements changed (step 5b). Without a
 configured webhook, skip this step and say so in one line.
 
+**Thread watch: on by default.** After posting the alert, run the `agent-alerts`
+watch (section 5 there) on its thread, every 4 minutes (or the overlay's
+interval), so the user can steer the run from Slack. This skill is one of the
+two whose watch is default-on. If the user says not to watch, don't.
+
 Handle the URL and the post as the `agent-alerts` skill describes: read it
 into a variable from the overlay's config/secret helper, check its shape, never
 print or store it, build the JSON with a serializer, and check for `200` / `ok`.
@@ -366,6 +371,11 @@ Live check: <version match | KVS entries N, diffs M | job result only>
   one of the change's dependencies (step 5).
 
 ## Revision notes
+
+- **30 October 2026** — agent-alerts made thread watches opt-in. This skill
+  keeps its watch **on by default**, every 4 minutes (or the overlay's
+  interval), because its runs are long and the alert thread is where the user
+  steers them. The user chose this explicitly.
 
 - **16 October 2026** — the step 3 watcher now parses leniently and tolerates
   up to five bad reads before giving up with `unreadable`. One empty API read
