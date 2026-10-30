@@ -23,6 +23,7 @@ remove_review_worktree() {
   fi
   rm -f -- "${wt}.diff"
   rm -f -- "${wt}.description.md"
+  rm -f -- "${wt}.codex.md" "${wt}.codex.log"
 }
 
 if [[ "${1:-}" == "--cleanup" ]]; then

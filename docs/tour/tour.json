@@ -130,12 +130,13 @@
     },
     "mr-review": {
       "stage": "review",
-      "pitch": "Reviews an MR against the whole codebase in an isolated worktree: traces callers, runs the repo's own checks, checks the tests catch the bug.",
+      "pitch": "Reviews an MR against the whole codebase in an isolated worktree: traces callers, runs the repo's own checks, checks the tests catch the bug. Outside Codex it also gets a blind, read-only Codex review and audits each Codex item against the code before anything reaches the report.",
       "when": "Someone asks you to review an MR, or you want a second opinion on your own before sending it.",
       "example": "Review https://gitlab.com/group/project/-/merge_requests/123",
       "needs": [
         "GitLab (glab)",
         "git",
+        "Codex CLI (optional second opinion)",
         "Jira (optional)"
       ],
       "generic": "partial",

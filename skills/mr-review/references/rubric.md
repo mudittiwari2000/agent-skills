@@ -76,6 +76,14 @@ Repo: <repo>  •  Base: <target>  •  Head: <sha short>  •  Files: <n>
 - Why it matters / how it triggers: the concrete path or input.
 - Fix: the smallest correct change (sketch, not necessarily full code).
 
+## Codex second opinion
+<omit this section when step 4b was skipped because the reviewer is Codex>
+Status: <ok | skipped: reason | failed: reason>
+| Codex item | Verdict | Reason |
+|---|---|---|
+| <title or question> | Confirmed → <severity> / Rejected / Unverified → open question | <file:line or check that settles it> |
+Missed by Codex: <your findings it did not raise, or "none">
+
 ## Open questions
 - <things you could not resolve from the code; ask the author>
 ```
