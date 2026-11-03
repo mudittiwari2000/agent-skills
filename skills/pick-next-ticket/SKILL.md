@@ -184,7 +184,11 @@ one line on what the user will do first.
 
 Then hand it to the team's draft path (the `agent-alerts` skill, or the
 overlay's equivalent). It lands as an **unsent draft** in the channel, and the
-user edits and sends it. Never send it yourself. Show the draft text in the
+user edits and sends it. Never send it yourself. Some messaging tools keep
+one draft per channel; if the channel's draft slot is already taken (often by
+the review request for the ticket just handed off), don't overwrite it. Send
+the pickup text to the user's private alert channel as a copy-ready message
+instead, and say so. Show the draft text in the
 terminal as plain text, not a blockquote, so it copies cleanly.
 
 ## 7. Hand off
