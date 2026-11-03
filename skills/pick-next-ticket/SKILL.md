@@ -1,17 +1,26 @@
 ---
 name: pick-next-ticket
-description: Choose the next ticket to work on from a team board's ready lane, the way a careful teammate would. Compares the ticket already assigned to you with anything of higher priority that is still unclaimed, scores your confidence (0-10) in each candidate against its acceptance criteria and the real code, and picks the first candidate that clears the threshold (default above 8), falling back to your assigned ticket. Then claims it, gives you a TL;DR, and drafts the "I'm picking this up" message in the team channel in the shape the channel already uses, for you to send. Use when the user says "pick up my next story", "what should I work on next", "take the highest-priority ticket in To Do", "once this is in review, pick the next one", or invokes /pick-next-ticket. Never sends the team message itself.
+description: Pull the next ticket from a priority-ordered Kanban board's ready lane (To Do), the way a careful teammate would. Checks first that nothing you already own needs finishing, then walks the lane in pull order (expedite, fixed-date risk, priority, board rank), compares the ticket already assigned to you with anything of higher priority that is still unclaimed, scores your confidence (0-10) in each candidate against its acceptance criteria and the real code, and pulls the first one that clears the threshold (default above 8), falling back to your assigned ticket. Skipped tickets are reported with the question that would unblock them, so they don't starve. Then claims it, gives you a TL;DR, and drafts the "I'm picking this up" message in the team channel in the shape the channel already uses, for you to send. Use when the user says "pick up my next story", "what should I work on next", "take the highest-priority ticket in To Do", "once this is in review, pick the next one", or invokes /pick-next-ticket. Never sends the team message itself.
 ---
 
 # Pick the next ticket
 
-Teams that work a shared board usually agree on one rule: take work in priority
-order, and say in the team channel what you are taking. An agent following that
-rule naively makes two mistakes. It grabs the top ticket whether or not it can
-deliver it, or it keeps to its own assigned ticket while something more urgent
-sits unclaimed. This skill weighs priority against confidence. It moves to a
-higher-priority ticket only when it can honestly deliver it, and it shows its
-reasoning so the user can overrule it.
+Made for **Kanban boards run as a pull system on priority**: nobody hands out
+work; when a developer frees up, they pull the top-priority item from the ready
+lane (To Do) and say in the team channel what they took. Kanban practice adds
+two rules around that pull: finish what you already own before starting
+something new ("stop starting, start finishing"), and take items in the order
+the board's policy sets, so urgent work isn't left waiting.
+
+An agent following the rule naively makes two mistakes. It grabs the top
+ticket whether or not it can deliver it, or it keeps to its own assigned ticket
+while something more urgent sits unclaimed. This skill weighs priority against
+confidence. It moves to a higher-priority ticket only when it can honestly
+deliver it, shows its reasoning so the user can overrule it, and says what
+would unblock every ticket it passed over.
+
+It works on Scrum boards too (pull from the sprint's To Do), but the priority
+and rank rules assume the lane's order is the team's real priority.
 
 ## Organisation overlay (optional)
 
@@ -34,6 +43,20 @@ to record them in a new overlay profile.
 
 If the user names a ticket, this skill isn't needed; start that ticket.
 
+## 0. Finish before you start
+
+Walk the user's own work from right to left (closest to done first) before
+pulling anything:
+
+- an MR or PR with unanswered review comments or a red pipeline;
+- a ticket in testing or sign-off with an open question addressed to the user;
+- a blocked ticket the user could unblock;
+- a WIP limit on the user's lane or column that pulling would break.
+
+If any of these exists, report it and ask whether to deal with it first. Pull
+anyway only when the user says so, or when the work is waiting on someone else
+(a reviewer, QA, a product answer) and nothing is the user's to do.
+
 ## 1. Read the ready lane
 
 Fetch every item in the board's first actionable lane (often "To Do"). Use the
@@ -54,10 +77,23 @@ Drop items that are not real pickups:
 What remains splits into **mine** (assigned to the user) and **available**
 (unassigned).
 
-## 2. Order by priority, then rank
+## 2. Order the lane by pull policy
 
-Sort by the tracker's priority scale, highest first, with ties broken by board
-rank. Get the scale from the tracker, not from memory. Some tickets carry a
+Sort in the board's **pull order**:
+
+1. **Expedite**: an item flagged as an emergency (an expedite swimlane or flag,
+   or a "Highest"/blocker priority on a live incident). It goes first and may
+   break a WIP limit; say so.
+2. **Fixed date at risk**: an item with a due date that will be missed if it
+   isn't started now (due date minus a rough lead time is today or past).
+3. **Everything else by priority**, highest first, ties broken by **board rank**
+   (the lane's top-to-bottom order). Respect a rank marker the team uses, such
+   as a "prioritised above this line" ticket: nothing below it outranks
+   anything above it.
+4. **Intangible** work (tech debt, tooling, "when you have time"), only when
+   nothing above it is pullable.
+
+Use the tracker's priority scale, not memory. Get the scale from the tracker, not from memory. Some tickets carry a
 value outside the usual names (for example a custom "Not prioritised"). Place
 those with comparison queries (`priority < Low`, `priority > High` in JQL)
 rather than guessing. Say where you placed them and how.
@@ -101,6 +137,13 @@ the user before claiming it.
 Don't round a score up to clear the threshold. A candidate at 8 with one
 question open is the user's call: name the question so they can answer it and
 re-run.
+
+**Don't let a skipped ticket starve.** In a pull system the top item stays at
+the top until someone takes it, so a low score must not quietly pass it over
+forever. For each skipped candidate, name the one question or fact that would
+lift its score (a product decision, a flag state, a reproduction), and who can
+answer it. Report these in the summary. Offer to ask them, but post nothing
+without the user's say-so.
 
 ## 4. Claim it
 
@@ -157,3 +200,12 @@ on the picked ticket. Otherwise end with the command that starts it.
 - Report the scores even when the fallback wins, so the choice can be checked.
 - Don't open the ticket's open questions on the user's behalf in Jira or Slack
   unless they ask. List them in the summary instead.
+
+## Background
+
+- Pull order follows Kanban's classes of service (expedite, fixed date,
+  standard, intangible), as in the Kanban University glossary and David
+  Anderson's work, with the standard class ordered by the board's priority and
+  rank instead of age because this skill targets priority-ordered boards.
+- Step 0 is the Kanban habit of walking the board right to left and finishing
+  work in flight before pulling more.

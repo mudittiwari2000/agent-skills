@@ -51,8 +51,8 @@
   "skills": {
     "pick-next-ticket": {
       "stage": "plan",
-      "pitch": "Picks your next ticket from the board's ready lane: a higher-priority unclaimed ticket wins only if a code-grounded confidence score clears the bar, otherwise your assigned one. Then it drafts the team-channel pickup message in the channel's own style.",
-      "when": "Your current ticket has reached review and you want the next one, or you ask what to work on next.",
+      "pitch": "For priority-run Kanban boards: checks you have nothing to finish first, walks the To Do lane in pull order (expedite, at-risk due dates, priority, rank), and pulls a higher-priority unclaimed ticket only if a code-grounded confidence score clears the bar, otherwise your assigned one. Says what would unblock each ticket it skipped, then drafts the pickup message in the team channel's own style.",
+      "when": "You've freed up (your ticket reached review) and your team pulls the top-priority item from To Do.",
       "example": "Once this is in review, pick up my next ticket from To Do, unless something higher priority is free and you're confident about it",
       "needs": [
         "Jira",
