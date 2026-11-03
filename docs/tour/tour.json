@@ -1,5 +1,5 @@
 {
-  "asOf": "2026-10-30",
+  "asOf": "2026-11-03",
   "repo": "https://github.com/mudittiwari2000/agent-skills",
   "intro": "Grounded engineering-workflow skills for AI coding agents. Each one checks claims against the real code, pipeline or ticket before it reports, and leaves the judgement calls (and anything sent to other people) to you. Pick a stage to see the skills for that part of delivery, or search for a tool or task.",
   "harnesses": [
@@ -49,6 +49,23 @@
     }
   ],
   "skills": {
+    "pick-next-ticket": {
+      "stage": "plan",
+      "pitch": "Picks your next ticket from the board's ready lane: a higher-priority unclaimed ticket wins only if a code-grounded confidence score clears the bar, otherwise your assigned one. Then it drafts the team-channel pickup message in the channel's own style.",
+      "when": "Your current ticket has reached review and you want the next one, or you ask what to work on next.",
+      "example": "Once this is in review, pick up my next ticket from To Do, unless something higher priority is free and you're confident about it",
+      "needs": [
+        "Jira",
+        "git",
+        "Slack (draft only)"
+      ],
+      "generic": "partial",
+      "genericNote": "The method (priority order, grounded 0-10 confidence, threshold, fallback) is tracker-neutral. Reading the lane, assigning and the comparison queries assume Jira; the announcement uses agent-alerts' draft path.",
+      "feeds": [
+        "jira-story-estimation",
+        "scope-audit"
+      ]
+    },
     "jira-story-estimation": {
       "stage": "plan",
       "pitch": "Story points from the ticket's own acceptance criteria and the real code, not from a mockup or the ticket's claims.",
@@ -273,7 +290,7 @@
   "flow": {
     "title": "One change, end to end",
     "intro": "How the skills hand off across a typical change. Each arrow is a point where the next skill picks up what the last one produced.",
-    "mermaid": "flowchart LR\n  A[jira-story-estimation] --> B[scope-audit]\n  B --> C[MR opened]\n  C --> D[mr-review-request]\n  D --> E[mr-review / guided-mr-review]\n  E --> F[mr-comment-resolution]\n  F --> G[merge]\n  G --> H[monitor-dev-ci]\n  H --> I[release tag]\n  I --> J[monitor-stage-ci]\n  J --> K[prod-flag-ledger]\n  K --> L[prod]\n  L -. incident .-> M[rca-report]\n  D -. drafts via .-> N[agent-alerts]\n  J -. drafts via .-> N",
+    "mermaid": "flowchart LR\n  P[pick-next-ticket] --> A[jira-story-estimation] --> B[scope-audit]\n  B --> C[MR opened]\n  C --> D[mr-review-request]\n  D --> E[mr-review / guided-mr-review]\n  E --> F[mr-comment-resolution]\n  F --> G[merge]\n  G --> H[monitor-dev-ci]\n  H --> I[release tag]\n  I --> J[monitor-stage-ci]\n  J --> K[prod-flag-ledger]\n  K --> L[prod]\n  L -. incident .-> M[rca-report]\n  D -. drafts via .-> N[agent-alerts]\n  J -. drafts via .-> N",
     "steps": [
       "Estimate the story from its acceptance criteria and the real code (jira-story-estimation). Review the spec first if there is one (confluence-review).",
       "Before opening the MR, check that every hunk is needed (scope-audit).",

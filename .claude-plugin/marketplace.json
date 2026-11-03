@@ -21,6 +21,7 @@
         "./skills/mr-comment-resolution",
         "./skills/mr-review",
         "./skills/mr-review-request",
+        "./skills/pick-next-ticket",
         "./skills/prod-flag-ledger",
         "./skills/rca-report",
         "./skills/scope-audit",
