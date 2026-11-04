@@ -79,7 +79,7 @@ bash $SKILL_DIR/scripts/fetch_mr.sh --working-tree
 ```
 
 It prints `MODE`, `REPO_DIR`, `SOURCE_BRANCH`, `TARGET_BRANCH`, `BASE_SHA`,
-`HEAD_SHA`, `HEAD_LABEL`, `TITLE`, `WEB_URL`, `EXTERNAL_POSTING_ALLOWED`,
+`HEAD_SHA`, `HEAD_LABEL`, `TITLE`, `WEB_URL`, `MR_STATE` (plus `MERGED_AT` when merged), `EXTERNAL_POSTING_ALLOWED`,
 `WORKTREE`, `DIFF_FILE`, `DESCRIPTION_FILE`, and the changed-file list. If it
 can't find the local clone for an MR URL, re-run with
 `REPO_DIR=~/dev/repos/<name>`.
@@ -91,6 +91,16 @@ the remote's actual default branch; do not substitute `main` by assumption.
 MR HEAD. `cd` into it. `$DIFF_FILE` holds the unified diff (base..head). In
 working-tree mode the helper snapshots both tracked and untracked changes into
 an isolated worktree; do not review in or mutate the user's original checkout.
+
+**Check `MR_STATE` before anything else.** When it is `merged` or `closed`,
+tell the user straight away (with `MERGED_AT`) and ask whether to go on. A
+review request in chat often goes stale within minutes: the author or a
+maintainer merges while it waits (seen on !9140, 4 Nov 2026, merged three
+minutes after the request). If the user goes on, it is a post-merge review:
+for a merged MR the helper takes `BASE_SHA` from GitLab's own diff base,
+because the target already contains the head. Findings become follow-up
+tickets or a fix-forward MR, not requested changes. Say "post-merge" in the
+report header and in any reply.
 
 Record all printed metadata. `HEAD_LABEL` is the report label; `HEAD_SHA` is the
 commit used for external freshness checks. `EXTERNAL_POSTING_ALLOWED=false`
@@ -289,10 +299,12 @@ When step 0 ran and the user asked for a reply in the thread (handing over the
 link "so you can reply" counts as asking), answer the requester in that thread
 once the report is saved:
 
-1. **Freshness first.** Confirm the live MR head still equals `HEAD_SHA`, for
-   example `glab mr view <IID> -R <project> -F json` → `sha`. If it moved, say
-   so and offer to re-review. Do not reply about an old commit as if it were
-   current.
+1. **Freshness first.** Re-read the MR (`glab mr view <IID> -R <project> -F
+   json`) and check both `sha` and `state`. If the head moved, say so and offer
+   to re-review. If it was merged or closed while you reviewed, tell the user
+   before drafting, and phrase the reply as post-merge follow-ups rather than
+   requested changes. Do not reply about an old commit or a stale state as if
+   it were current.
 2. **Write the reply from the saved report.** Do not write a second review.
    Keep it short and readable in chat: tag the requester; give the verdict and
    the short head SHA; list each Blocker, High and Medium finding as

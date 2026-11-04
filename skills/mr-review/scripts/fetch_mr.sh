@@ -145,6 +145,9 @@ if [[ -n "$json" ]]; then
   TITLE="$(jq -r '.title' <<<"$json")"
   WEB_URL="$(jq -r '.web_url' <<<"$json")"
   DESCRIPTION="$(jq -r '.description // empty' <<<"$json")"
+  MR_STATE="$(jq -r '.state // empty' <<<"$json")"
+  MERGED_AT="$(jq -r '.merged_at // empty' <<<"$json")"
+  MR_DIFF_BASE="$(jq -r '.diff_refs.base_sha // empty' <<<"$json")"
 elif [[ "$MODE" == "branch" ]]; then
   TITLE="$BRANCH"
 fi
@@ -184,10 +187,19 @@ else
   die "Could not resolve target branch '$TARGET'."
 fi
 BASE_SHA="$(git merge-base "$HEAD_SHA" "$target_ref")" || die "Source and target have no merge base."
+# Once an MR is merged, the target may already contain its head (fast-forward
+# or squash-then-sync), so merge-base can equal HEAD and the diff comes out
+# empty. GitLab's own diff base is what the MR showed reviewers; use it.
+if [[ "${MR_STATE:-}" == "merged" && -n "${MR_DIFF_BASE:-}" ]] && \
+   git cat-file -e "$MR_DIFF_BASE^{commit}" 2>/dev/null; then
+  BASE_SHA="$MR_DIFF_BASE"
+fi
 
 echo "MR_IID=$IID"
 echo "TITLE=$TITLE"
 echo "WEB_URL=$WEB_URL"
+echo "MR_STATE=${MR_STATE:-unknown}"
+[[ -n "${MERGED_AT:-}" ]] && echo "MERGED_AT=$MERGED_AT"
 echo "SOURCE_BRANCH=$BRANCH"
 echo "TARGET_BRANCH=$TARGET"
 echo "BASE_SHA=$BASE_SHA"
