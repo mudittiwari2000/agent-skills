@@ -41,6 +41,10 @@ elif [[ "$REF" =~ ^https?://[^/]+/(.+)/-/merge_requests/([0-9]+) ]]; then
   MODE="mr"; PROJECT="${BASH_REMATCH[1]}"; IID="${BASH_REMATCH[2]}"
 elif [[ "$REF" =~ ^!?([0-9]+)$ ]]; then
   MODE="mr"; IID="${BASH_REMATCH[1]}"
+elif [[ "$REF" =~ ^https?:// ]]; then
+  # Any other URL (a Slack/chat permalink, an issue link) is not a branch name.
+  # Resolve the MR from it first (SKILL.md step 0), then pass the MR URL here.
+  die "Not a GitLab merge-request URL: $REF. For a chat message link, read the message, extract the MR URL (SKILL.md step 0) and pass that."
 else
   MODE="branch"; BRANCH="$REF"
 fi
