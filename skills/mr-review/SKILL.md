@@ -1,6 +1,6 @@
 ---
 name: mr-review
-description: Ground and review a GitLab merge request across the whole codebase, not just the diff. Use when the user shares a gitlab.com merge-request URL or IID (e.g. "review this MR", "review !123", pastes a /-/merge_requests/ link), shares a Slack (or other chat) message link whose message asks for an MR review, names a branch to review, or asks to review the current working-tree changes, for any repo under ~/dev/repos, including agent tooling repositories (skills, scripts, MCP servers, and plugins). Fetches the MR into an isolated worktree, traces every changed symbol through its real callers/tests/config, checks correctness, regressions, security, error handling, tests, and repo conventions, verifies claims by running the repo's own checks when feasible, and emits a severity-ranked report. Local report by default; optionally posts it to GitLab or to the JIRA ticket identified from the source branch or MR title, but only when explicitly asked and only after verifying that the reviewed commit is still current. Given a chat message link, it reads the message and thread to find the MR, then leaves a short reply in that thread as an unsent draft for the user to send. When the user wants to review the MR themselves and asks where to look, use guided-mr-review instead.
+description: Ground and review a GitLab merge request across the whole codebase, not just the diff. Use when the user shares a gitlab.com merge-request URL or IID (e.g. "review this MR", "review !123", pastes a /-/merge_requests/ link), shares a Slack (or other chat) message link whose message asks for an MR review, names a branch to review, or asks to review the current working-tree changes, for any repo under ~/dev/repos, including agent tooling repositories (skills, scripts, MCP servers, and plugins). Fetches the MR into an isolated worktree, traces every changed symbol through its real callers/tests/config, checks correctness, regressions, security, error handling, tests, and repo conventions, verifies claims by running the repo's own checks when feasible, and emits a severity-ranked report. Local report by default; optionally posts it to GitLab or to the JIRA ticket identified from the source branch or MR title, but only when explicitly asked and only after verifying that the reviewed commit is still current. Given a chat message link, it reads the message and thread to find the MR, then (after the user's yes or a standing preference) posts the review on the MR and leaves a short pointer reply in that thread as an unsent draft for the user to send. When the user wants to review the MR themselves and asks where to look, use guided-mr-review instead.
 ---
 
 # MR Review (grounded, whole-codebase)
@@ -275,7 +275,8 @@ to either posting helper. Do not post anywhere unless explicitly requested.
 
 ### 6. Post to GitLab — only when explicitly asked
 
-If (and only if) the user asks to post the review to the MR, first require
+If (and only if) the user asks to post the review to the MR (step 6b point 2
+asks this for a chat-link review), first require
 `EXTERNAL_POSTING_ALLOWED=true`. If the current request already explicitly asks
 to post to the same `WEB_URL`, that is sufficient confirmation; otherwise show
 the resolved MR URL and ask for confirmation. Then run:
@@ -290,7 +291,8 @@ the live MR head first, and uses GitLab's duplicate protection. If it reports
 `STALE_REVIEW`, stop: fetch and review the new head before posting. Use
 `--allow-stale` only when the user explicitly asks to post the older review
 despite that warning; use `--repost` only when they explicitly request a
-duplicate. For inline discussions on specific lines, ask first — bulk inline
+duplicate. It prints `NOTE_URL` when glab returns the note's link; use it
+for the chat pointer in step 6b. For inline discussions on specific lines, ask first — bulk inline
 comments are noisy.
 
 ### 6b. Reply in the chat thread: only when the input was a message link
@@ -305,16 +307,26 @@ once the report is saved:
    before drafting, and phrase the reply as post-merge follow-ups rather than
    requested changes. Do not reply about an old commit or a stale state as if
    it were current.
-2. **Write the reply from the saved report.** Do not write a second review.
-   Keep it short and readable in chat: tag the requester; give the verdict and
-   the short head SHA; list each Blocker, High and Medium finding as
-   `file:line` with one line on what is wrong; give a one-line summary of the
-   checks run; then the Low findings and nits. Leave out the full report, the
-   Codex table, and anything the report marks "not verified" as if it were a
-   pass. No blockquotes, because the `>` column gets copied with the text.
-   When the review is long or has findings worth discussing, end with "Full
-   review on the MR" only if step 6 actually posted it there.
-3. **Deliver it as a draft by default.** The reply tags another person, so
+2. **Put the detail on the MR, not in chat.** The findings belong where the
+   author fixes them and where they stay attached to the code. So, by default,
+   post the saved report to the MR (step 6) first and keep the chat reply to a
+   pointer. A chat link is not a GitLab request on its own. Unless the overlay
+   records a standing preference for this, ask once before drafting: "Post the
+   review on the MR and keep the thread reply to a pointer?" When the user says
+   no, use the fallback below.
+3. **Write the reply from the saved report.** Do not write a second review.
+   With the report on the MR, the reply has only: a tag for the requester, the
+   verdict, the short head SHA, the finding count by severity (for example "1
+   Medium, 1 Low"), a one-line headline for each Blocker or High, and a link
+   to the MR note (`NOTE_URL` from the helper, or the MR URL when it printed
+   none). No `file:line` lists, no checks summary, no open questions; those
+   live in the MR note. **Fallback, when nothing was posted to the MR:** list
+   each Blocker, High and Medium finding as `file:line` with one line on what
+   is wrong, give a one-line summary of the checks run, then the Low findings
+   and nits. Either way, leave out the Codex table and anything the report
+   marks "not verified" as if it were a pass. No blockquotes, because the `>`
+   column gets copied with the text.
+4. **Deliver it as a draft by default.** The reply tags another person, so
    create it as an unsent **thread draft** (`thread_ts` = the parent `ts`; for
    Slack, `slack_send_message_draft`). Follow the agent-alerts "Messages that
    tag other people" rules for formatting and for an existing draft in the
@@ -322,12 +334,16 @@ once the report is saved:
    than draft, **and** the organisation's send policy (overlay) allows that
    channel. When a send guard denies the call, report the denial. Never edit
    the guard or its allowlist to get past it.
-4. **Tell the user** the channel name, that the reply is a draft in that
-   thread (or the sent message's link), and the draft id when the tool
-   returns one.
+5. **Tell the user** the MR note link (when step 6 posted one), the channel
+   name, that the reply is a draft in that thread (or the sent message's
+   link), and the draft id when the tool returns one.
 
-A thread reply does not imply posting to GitLab or Jira. Each destination still
-needs its own explicit request.
+A thread reply does not imply posting to Jira. Posting to GitLab follows point
+2: the user's yes, or a standing preference in the overlay.
+
+Revision 5 Nov 2026: the review detail moved from the chat reply to an MR
+note. A user found a thread reply listing every `file:line`, the checks and
+the questions too heavy for chat, and wanted the MR to carry the detail.
 
 ### 7. Post to JIRA — only when explicitly asked
 

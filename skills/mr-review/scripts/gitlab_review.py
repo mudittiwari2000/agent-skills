@@ -47,8 +47,15 @@ def main():
     print(f"MR_IID={iid}")
     print(f"CURRENT_MR_HEAD={current}")
     print("POSTED_GITLAB_NOTE=true")
-    if result.stdout.strip():
-        print(result.stdout.strip())
+    output = result.stdout.strip()
+    note_url = next(
+        (word for word in output.split() if word.startswith("http") and "#note_" in word),
+        "",
+    )
+    if note_url:
+        print(f"NOTE_URL={note_url}")
+    if output:
+        print(output)
 
 
 if __name__ == "__main__":

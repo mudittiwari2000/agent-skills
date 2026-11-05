@@ -1,5 +1,5 @@
 {
-  "asOf": "2026-11-04",
+  "asOf": "2026-11-05",
   "repo": "https://github.com/mudittiwari2000/agent-skills",
   "intro": "Grounded engineering-workflow skills for AI coding agents. Each one checks claims against the real code, pipeline or ticket before it reports, and leaves the judgement calls (and anything sent to other people) to you. Pick a stage to see the skills for that part of delivery, or search for a tool or task.",
   "harnesses": [
@@ -147,7 +147,7 @@
     },
     "mr-review": {
       "stage": "review",
-      "pitch": "Reviews an MR against the whole codebase in an isolated worktree: traces callers, runs the repo's own checks, checks the tests catch the bug. Outside Codex it also runs Codex's own review mode, read-only and blind to its findings, and audits each Codex item against the code before anything reaches the report. Hand it a Slack message asking for a review and it finds the MR in the message, then leaves a short reply in that thread as a draft for you to send.",
+      "pitch": "Reviews an MR against the whole codebase in an isolated worktree: traces callers, runs the repo's own checks, checks the tests catch the bug. Outside Codex it also runs Codex's own review mode, read-only and blind to its findings, and audits each Codex item against the code before anything reaches the report. Hand it a Slack message asking for a review and it finds the MR in the message, posts the full review on the MR and leaves a short pointer reply in that thread as a draft for you to send.",
       "when": "Someone asks you to review an MR (directly, or in a Slack message you pass on), or you want a second opinion on your own before sending it.",
       "example": "Review https://gitlab.com/group/project/-/merge_requests/123",
       "needs": [
