@@ -317,10 +317,28 @@ once the report is saved:
 3. **Write the reply from the saved report.** Do not write a second review.
    With the report on the MR, the reply has only: a tag for the requester, the
    verdict, the short head SHA, the finding count by severity (for example "1
-   Medium, 1 Low"), a one-line headline for each Blocker or High, and a link
-   to the MR note (`NOTE_URL` from the helper, or the MR URL when it printed
-   none). No `file:line` lists, no checks summary, no open questions; those
-   live in the MR note. **Fallback, when nothing was posted to the MR:** list
+   Medium, 1 Low"), a one-line headline for each Blocker or High, the number
+   of open questions, and a link to the MR note (`NOTE_URL` from the helper,
+   or the MR URL when it printed none). No `file:line` lists, no checks
+   summary, and no question text; those live in the MR note. Lay it out so
+   it can be read at a glance, one fact per line:
+
+   ```
+   <@requester> I've reviewed !<IID>: **<verdict>**
+
+   • Commit: `<short sha>`
+   • Findings: <"none", or counts for non-zero severities only, e.g. "1 High, 2 Low">
+   • High: <one-line headline>            (one line per Blocker/High; omit when none)
+   • Open questions: <n>, on the MR       (omit when none)
+
+   [Full review on the MR](<NOTE_URL>)
+   ```
+
+   Keep the verdict on the first line. List only non-zero severities, never
+   "0 Blocker/High/Medium/Low". Link with a label, never a bare URL, and leave
+   a blank line after the bullets (agent-alerts formatting rule). For a
+   post-merge review, write "post-merge review" after the IID.
+   **Fallback, when nothing was posted to the MR:** list
    each Blocker, High and Medium finding as `file:line` with one line on what
    is wrong, give a one-line summary of the checks run, then the Low findings
    and nits. Either way, leave out the Codex table and anything the report
@@ -344,6 +362,9 @@ A thread reply does not imply posting to Jira. Posting to GitLab follows point
 Revision 5 Nov 2026: the review detail moved from the chat reply to an MR
 note. A user found a thread reply listing every `file:line`, the checks and
 the questions too heavy for chat, and wanted the MR to carry the detail.
+Revision 6 Nov 2026: the pointer got a fixed layout (verdict line, bullets,
+labelled link). The one-line version with "0 Blocker/High/Medium/Low" and a
+bare note URL was hard to read.
 
 ### 7. Post to JIRA — only when explicitly asked
 
