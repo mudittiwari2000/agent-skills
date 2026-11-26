@@ -37,6 +37,14 @@ A finding with no `file:line` anchor in the current tree is not admissible.
    local patterns, naming, import style, lint/type rules.
 8. **Maintainability** — dead code, duplication that ignores an existing helper,
    needless complexity, leaky abstractions. Report only if concrete.
+9. **Release hygiene** — when the repo (its `CLAUDE.md`/`AGENTS.md`, its
+   repo-profile row, or the overlay) requires every MR to bump a version, check
+   it on every review, even when the diff looks complete. A missing bump, a
+   bump in only one of the files that must move together (manifest and
+   lockfile), or a bump at or below the target branch's current version is a
+   finding marked **Required** at Medium or higher: the MR must not merge
+   without it. Compare against the live target (`git fetch` first), not the
+   MR's base, because the target moves while the MR waits.
 
 ## Verify, don't just assert
 
@@ -53,6 +61,10 @@ green result — if you did not run it, say "not verified".
 - **Medium** — narrow-condition bug, missing test for risky logic, convention
   break with real consequences.
 - **Low / Nit** — style, naming, minor cleanup. Group these; do not pad.
+
+Mark any finding the MR must not merge without as **Required** in its title
+(for example `### [Medium] Required: bump the app version`), whatever its
+severity. Everything else is non-blocking.
 
 Report findings most-severe first. If nothing is a Blocker/High, say so plainly
 rather than inflating nits.

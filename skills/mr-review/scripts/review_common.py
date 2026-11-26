@@ -47,6 +47,14 @@ def current_mr_metadata(mr_url):
 
 
 def ensure_current_head(mr_url, reviewed_head, allow_stale=False):
+    project, iid, current, _ = ensure_current_head_metadata(
+        mr_url, reviewed_head, allow_stale=allow_stale
+    )
+    return project, iid, current
+
+
+def ensure_current_head_metadata(mr_url, reviewed_head, allow_stale=False):
+    """Like ensure_current_head, but also returns the MR metadata (diff_refs)."""
     reviewed_head = reviewed_head.strip().lower()
     if not SHA_RE.fullmatch(reviewed_head):
         die(f"invalid reviewed head SHA: {reviewed_head}")
@@ -63,4 +71,4 @@ def ensure_current_head(mr_url, reviewed_head, allow_stale=False):
             f"{reviewed_head[:12]} no longer matches current MR head {current[:12]}; "
             "fetch and review the MR again before posting"
         )
-    return project, iid, current
+    return project, iid, current, metadata

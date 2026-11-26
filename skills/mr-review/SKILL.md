@@ -268,7 +268,10 @@ openai/codex). The result-handling rules come from openai/codex-plugin-cc
 ### 5. Emit the report
 
 Produce the severity-ranked report defined in `references/rubric.md`, every
-finding anchored to `file:line` in the current tree. Identify the reviewed
+finding anchored to `file:line` in the current tree. Before writing it, check
+the release-hygiene dimension in the rubric: when the repo requires a version
+bump per MR, a missing or stale bump is always a **Required** finding.
+Identify the reviewed
 commit with `HEAD_LABEL`. Print it and save the exact emitted Markdown beside
 the worktree as `$WORKTREE.review.md`; this persistent file is the sole input
 to either posting helper. Do not post anywhere unless explicitly requested.
@@ -292,8 +295,54 @@ the live MR head first, and uses GitLab's duplicate protection. If it reports
 `--allow-stale` only when the user explicitly asks to post the older review
 despite that warning; use `--repost` only when they explicitly request a
 duplicate. It prints `NOTE_URL` when glab returns the note's link; use it
-for the chat pointer in step 6b. For inline discussions on specific lines, ask first — bulk inline
-comments are noisy.
+for the chat pointer in step 6b.
+
+**Line-by-line mode.** Post each finding as its own discussion on the line it
+is about, the way a human reviewer comments in GitLab's diff view, when the
+user asks for it or the overlay records it as a standing preference. Without
+either, ask first: a stack of inline comments is noisier than one note. Write
+the comments to a JSON list beside the report
+(`$WORKTREE.comments.json`), one object per finding:
+
+```json
+[
+  {"path": "src/a.ts", "line": 42, "body": "**Headline sentence.** Why, and the fix."},
+  {"body": "**The app version needs a bump.** ..."}
+]
+```
+
+`path` is the file at the MR head, `line` the line number in the new file.
+Leave both out for a finding with no line, such as a missing version bump. Each
+`body` stands alone, because it is read next to the code, not next to the
+report:
+
+- Start with a bold one-sentence headline that states the problem.
+  Non-blocking findings start with `**Non-blocking:**`; a Required finding
+  says what must change before merge.
+- Then the trigger path and the fix, in plain prose. Use the same facts as the
+  report; do not write a second review.
+- Put `file:line` references to other places as text, not as a second anchor.
+
+Then post them, and the report as a summary note (verdict, verification run,
+Codex table, open questions; the findings can shrink to one line each with a
+link to their discussion):
+
+```bash
+python3 $SKILL_DIR/scripts/gitlab_review.py inline \
+  --mr-url "$WEB_URL" --comments "$WORKTREE.comments.json" --head-sha "$HEAD_SHA"
+python3 $SKILL_DIR/scripts/gitlab_review.py post \
+  --mr-url "$WEB_URL" --report "$REPORT_FILE" --head-sha "$HEAD_SHA"
+```
+
+`inline` checks the live head the same way (`STALE_REVIEW`, `--allow-stale`).
+It anchors each comment with GitLab's diff position: an added line gets
+`new_line`, an unchanged context line gets both `old_line` and `new_line`.
+A line outside the diff, or one GitLab rejects, is posted as a general
+discussion that starts with a link to that line at the head commit. It
+prints one line per comment (`INLINE_POSTED`, `GENERAL_POSTED`,
+`INLINE_REJECTED`, `SKIPPED_DUPLICATE`) with the note URL. Add `--dry-run`
+to see the anchors without posting. An identical comment already on the
+same line is skipped unless `--repost`.
 
 ### 6b. Reply in the chat thread: only when the input was a message link
 
@@ -427,8 +476,8 @@ Codex output and log:
 bash $SKILL_DIR/scripts/fetch_mr.sh --cleanup "$WORKTREE"
 ```
 
-Cleanup deliberately preserves `$WORKTREE.review.md` as the durable review
-artifact. Remove it only if the user asks.
+Cleanup deliberately preserves `$WORKTREE.review.md` (and `$WORKTREE.comments.json`
+when line-by-line mode ran) as the durable review artifacts. Remove it only if the user asks.
 
 ## Rules
 
