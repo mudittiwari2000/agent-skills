@@ -1,5 +1,5 @@
 {
-  "asOf": "2026-11-26",
+  "asOf": "2026-11-27",
   "repo": "https://github.com/mudittiwari2000/agent-skills",
   "intro": "Grounded engineering-workflow skills for AI coding agents. Each one checks claims against the real code, pipeline or ticket before it reports, and leaves the judgement calls (and anything sent to other people) to you. Pick a stage to see the skills for that part of delivery, or search for a tool or task.",
   "harnesses": [
@@ -186,7 +186,7 @@
     },
     "mr-comment-resolution": {
       "stage": "review",
-      "pitch": "Works through review comments on your own MR: verifies each finding, fixes what belongs, tickets what doesn't, replies with a table the reviewer can check.",
+      "pitch": "Works through review comments on your own MR, including bot quality gates and comments that arrive mid-round. It verifies each finding (reproducing a private gate's rules locally), fixes what belongs, tickets what doesn't, and replies with a table the reviewer can check.",
       "when": "A review has landed on your MR and you want every finding answered honestly.",
       "example": "Address the review comments on !123",
       "needs": [

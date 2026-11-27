@@ -48,6 +48,20 @@ Practicalities that cost time the first time:
   output and do not paste it into your own report.
 - Note for each thread whether it is `resolvable` and `resolved`. Plain notes can
   only be replied to.
+- **Findings hide in top-level notes too.** A reviewer's general MR comment (a
+  non-resolvable individual note) often carries a real defect. It counts as a
+  thread to answer. Replying to it makes it resolvable, so resolve it once fixed.
+- **Bot and quality-gate notes are findings.** A failed gate (SonarQube, coverage,
+  security scan) posted by a bot names a count, not the issues, and the dashboard
+  may be private to you and the reviewer. Treat the gate as a finding. Name each
+  issue by rule id, from the dashboard, the reviewer, or a local reproduction (see
+  step 5).
+- **Reviews keep arriving while you work.** Re-fetch the threads after fixing and
+  again right before posting. Find new threads by **comparing thread ids** with
+  your first fetch, not by a `created_at` cutoff: several notes can share the
+  same second, and a cutoff silently drops one (it happened: 10 threads arrived
+  within 4 seconds, and a time filter missed one). Fold late findings into the
+  same round when they are cheap, so the reviewer gets one coherent answer.
 - **Line numbers belong to the version the reviewer saw.** Read
   `position.head_sha` and compare it with the current head. After a rebase or a
   force-push the cited line no longer points at the same code: re-anchor by
@@ -150,6 +164,22 @@ cannot fail is decoration. Restore the file byte-for-byte afterwards and re-run.
 **Run the gates, and know which ones actually cover your files.** Run the repo's own
 commands, from where the repo runs them:
 
+- **Reproduce a bot's rules locally, before and after.** For a static-analysis gate
+  you cannot see, run the named rules yourself: install the rule plugin in a
+  throwaway folder (e.g. `eslint-plugin-sonarjs` plus a parser) and run only those
+  rules over the changed files, at the old head and at the new one. "Old head
+  reports exactly the reviewer's N, new head reports 0" is strong evidence. It is
+  still not the gate, though: the ESLint plugin is a subset of the server's rules
+  (its README says so). Say the pipeline's own gate is the confirmation, and check
+  it after the push.
+- **Compare error lists, not counts.** For "no new type errors", diff the sorted
+  error lists of the base and the branch, with line numbers stripped. Equal counts
+  can hide a swap, and a type upgrade often only rewords an error on a line that
+  already failed. Build the base in a throwaway worktree. Expect generated files
+  that a fresh checkout lacks (e.g. Next's `next-env.d.ts`, which declares image
+  imports) to add environment-only errors, then exclude them from both sides and
+  say so.
+
 - A linter may *ignore* the package you changed ("File ignored because of a matching
   ignore pattern"). That is "lint does not apply", not "lint clean" — say so.
 - Never pipe a gate into `tail`/`grep` and read the pipeline's exit code; capture
@@ -215,7 +245,12 @@ need no extra stop.
 
 **A remark that wants only a code comment** (a clarifying comment, a rename in a
 docstring) still moves the head and stales any QA recorded against the tree. Prefer
-answering it in the reply unless the user or reviewer wants the commit.
+answering it in the reply unless the user or reviewer wants the commit. **But when
+the round already moves the head** (you are pushing fixes anyway), and the question
+shows the code is unclear, also put the answer in the code. Google's guidance
+for authors: replies in the review tool don't help future readers, and clearer
+code or a comment does
+([handling reviewer comments](https://google.github.io/eng-practices/review/developer/handling-comments.html)).
 
 Reply **inside each thread**. Only when a thread genuinely cannot be replied to (it is
 not a resolvable discussion, or the API refuses) fall back to a new MR note — and
@@ -281,6 +316,16 @@ A review round changes facts other people read. After the push:
 - Do not claim a gate passed that did not cover your files.
 
 ## Revision notes
+
+- **27 November 2026** — revised after a round with 10 threads from two reviewers
+  and a SonarQube bot, with more arriving mid-round. Added: findings in top-level
+  notes and bot quality-gate notes; re-fetching by thread id, not by time; reproducing
+  a private static-analysis gate's rules locally before and after, while treating the
+  pipeline gate as the confirmation; diffing type-error lists rather than counts,
+  and excluding environment-only errors from a fresh worktree; putting the answer in
+  the code when the head is moving anyway. Sources: Google eng-practices (handling
+  reviewer comments) and the eslint-plugin-sonarjs README (the ESLint plugin is a
+  subset of the server's rules).
 
 - **11 September 2026** — first version.
 - **6 October 2026** — revised after resolving two threads on a product MR:
