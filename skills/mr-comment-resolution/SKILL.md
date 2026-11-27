@@ -175,8 +175,15 @@ commands, from where the repo runs them:
   issues the MR introduces count. "Old head
   reports exactly the reviewer's N, new head reports 0" is strong evidence. It is
   still not the gate, though: the ESLint plugin is a subset of the server's rules
-  (its README says so). Say the pipeline's own gate is the confirmation, and check
-  it after the push.
+  (its README says so). The server also runs rules it adopts from other plugins,
+  above all typescript-eslint (`prefer-nullish-coalescing` is S6606,
+  `no-unnecessary-type-assertion` S4325, `prefer-optional-chain` S6582), and
+  eslint-plugin-react and unicorn. When the plugin's own rules come back clean
+  but the gate still fails, run those plugins base against head too and look at
+  what changed between the two heads; a review fix (`??` swapped for `||`) can
+  be the new issue. Read the project's scanner config (`sonar.exclusions`) to
+  learn which files count, e.g. specs excluded. Say the pipeline's own gate is
+  the confirmation, and check it after the push.
 - **Compare error lists, not counts.** For "no new type errors", diff the sorted
   error lists of the base and the branch, with line numbers stripped. Equal counts
   can hide a swap, and a type upgrade often only rewords an error on a line that
@@ -322,6 +329,10 @@ A review round changes facts other people read. After the push:
 
 ## Revision notes
 
+- **27 November 2026 (evening)** — the plugin's full set came back clean but the
+  gate still failed: the issue came from a typescript-eslint rule Sonar adopts
+  (S6606), introduced by the previous round's own fix. Added the adopted-plugin
+  check and the scanner-config read.
 - **27 November 2026 (later)** — gate reproduction now runs the full recommended
   rule set with type information, base against head: fixing only the named rules
   let two type-aware Sonar issues through to the next gate run.
