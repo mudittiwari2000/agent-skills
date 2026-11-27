@@ -166,8 +166,13 @@ commands, from where the repo runs them:
 
 - **Reproduce a bot's rules locally, before and after.** For a static-analysis gate
   you cannot see, run the named rules yourself: install the rule plugin in a
-  throwaway folder (e.g. `eslint-plugin-sonarjs` plus a parser) and run only those
-  rules over the changed files, at the old head and at the new one. "Old head
+  throwaway folder (e.g. `eslint-plugin-sonarjs` plus a parser) and run them over
+  the changed files, at the old head and at the new one. Run the **plugin's whole
+  recommended set with type information** (`parserOptions.project`), not only the
+  rules someone named. A type-aware rule the reviewer didn't mention
+  (`reduce-initial-value`, `different-types-comparison`) can fail the next gate
+  run after you fixed the named ones. Compare base against head, so only the
+  issues the MR introduces count. "Old head
   reports exactly the reviewer's N, new head reports 0" is strong evidence. It is
   still not the gate, though: the ESLint plugin is a subset of the server's rules
   (its README says so). Say the pipeline's own gate is the confirmation, and check
@@ -317,6 +322,9 @@ A review round changes facts other people read. After the push:
 
 ## Revision notes
 
+- **27 November 2026 (later)** — gate reproduction now runs the full recommended
+  rule set with type information, base against head: fixing only the named rules
+  let two type-aware Sonar issues through to the next gate run.
 - **27 November 2026** — revised after a round with 10 threads from two reviewers
   and a SonarQube bot, with more arriving mid-round. Added: findings in top-level
   notes and bot quality-gate notes; re-fetching by thread id, not by time; reproducing
